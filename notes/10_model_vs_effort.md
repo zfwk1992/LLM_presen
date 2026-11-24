@@ -1,6 +1,6 @@
 # 10 · Model vs. Effort（模型与努力程度）
 
-这个主题有三页。
+这个主题有五页：前三页（10a、10b、10c）讲原理，后两页（10d、10e）把原理落到 DCM 集成那个例子上。
 
 ![Model](../llm_agent_animations_single_page/10a_model.gif)
 
@@ -105,6 +105,98 @@ Total cost & latency  ≈  output tokens   ×   compute per token
 底部小字：*"Plus input tokens: in an agent loop the growing context is re-read at every step (prompt caching makes this cheaper)."* 意思是除了输出，还有输入的成本：Agent 每一轮都要重新读入不断变长的上下文（04、09），提示缓存能降低这部分费用。
 
 字幕：*"Two independent knobs, multiplied together"*
+
+## 用同一个例子看两个旋钮（10d、10e）
+
+前三页讲的是原理。这两页把它落到 04a–04e 那个例子上：同一句请求 "How do we integrate DCM into this project?"，换模型会怎样，换 effort 会怎样。
+
+![Same request, three models](../llm_agent_animations_single_page/10d_same_task_models.gif)
+
+![Same request, four effort levels](../llm_agent_animations_single_page/10e_same_task_effort.gif)
+
+**先说明：这两页里的时间、成本倍数和结果都是示意，不是实测。** 画面上有标注。它们要表达的是方向和量级关系，具体数字取决于模型版本、任务和价格。
+
+### 10d · 同一个请求，三个模型（22.5 s）
+
+三条横道，共用一根时间轴。每个方块是一次 LLM 调用。
+
+| | 较小的模型 | 中等模型 | 较大的模型 |
+|---|---|---|---|
+| 举例 | Haiku | Sonnet | Opus |
+| 每次调用耗时 | 5 s | 12 s | 20 s |
+| 调用次数 | 7（其中 1 次读错了文件） | 6 | 6 |
+| 总耗时 | 35 s | 72 s | 120 s |
+| 结果 | 方案只有 4 步中的 3 步，漏了 Rte 端口 | 完整方案，走完 5 步流程 | 完整方案，还指出流程里没提到的 ComM 依赖 |
+| 成本 | ≈ 1× | ≈ 3× | ≈ 5× |
+
+| 时间 | 字幕 | 这时候讲什么 |
+|---|---|---|
+| 0.8 s | ① Same request, same harness, same skill: only the model differs | "请求、harness、skill 全都一样，只换模型" |
+| 3.0 s | ② Each call takes longer with a bigger model: more compute per token | "看方块的宽度：模型越大，每次调用越久" |
+| 6.2 s | ③ The smaller model is done first, but took a wrong turn and missed a step | "小模型最先做完，但读错了一个文件，方案也漏了一步" |
+| 9.4 s | ④ The larger models follow the whole workflow; the largest notices more | "大一些的模型走完了全部流程，最大的还多发现了一点" |
+| 14.6 s | ⑤ The token counts are about the same. The price per token is not | "三条道处理的 token 数量差不多，差的是每个 token 的单价" |
+| 18.4 s | ⑥ Model = how good each decision is, and what each token costs | 结论 |
+
+这一页要讲清楚的三件事：
+
+- **循环没有变。** 三个模型收到的是同样的提示词，用的是同样的工具，走的是同样的 Agent loop。
+- **token 数量差不多，单价不同。** 画面下方写着：每条道都是约 113k 输入加不到 1k 输出。成本的差别几乎全部来自每个 token 的价格。
+- **差别在每一步判断的质量。** 小模型更容易走弯路或漏掉东西；大模型更可能注意到没人提醒它的问题。这一点没法从 token 数量上看出来。
+
+顺带可以指出一个数字：**113k 输入对不到 1k 输出**。这个任务里模型几乎一直在"读"，很少在"写"。这是 Agent 任务的典型特征，原因是每次调用都要把不断变长的提示词重发一遍（04c、04e 讲过）。
+
+### 10e · 同一个请求、同一个模型，四档 effort（23.0 s）
+
+四条横道。每次调用画成两小块：紫色是思考，橙色是它写出的工具调用，最后一块绿色是最终答案。
+
+| effort | LLM 调用 | 它做了什么 | 输入 token | 成本 |
+|---|---|---|---|---|
+| low | 4 | 加载 skill、跑脚本、检查 Os/Rte。跳过了查规范 | 68k | ≈ 0.6× |
+| medium | 6 | 就是 04d 那一遍：走完 5 步流程 | 113k | 1× |
+| high | 9 | 另外读了 PduR 和 ComM 的配置，重新核对规范 | 216k | ≈ 1.9× |
+| max | 14 | 另外读了 Dcm 的源码，逐步验证，列出未决问题 | 504k | ≈ 4.5× |
+
+| 时间 | 字幕 | 这时候讲什么 |
+|---|---|---|
+| 0.8 s | ① Same request, same model: only the effort level differs | "这次模型不变，只换 effort" |
+| 3.0 s | ② Low: few steps and little thinking. It skips the spec lookup | "low：步骤少，思考短，直接跳过了查规范" |
+| 5.6 s | ③ Medium: the session you just saw, all five workflow steps | "medium：就是刚才看过的那一遍" |
+| 8.6 s | ④ High and max: more thinking, more checks, more calls | "看紫色块变宽、方块变多：想得更久，查得更多" |
+| 15.6 s | ⑤ Tokens grow faster than calls: every call re-sends a longer prompt | "调用次数是 2.3 倍，token 却是 4.5 倍" |
+| 19.0 s | ⑥ Effort = how much work, not how smart. Pick it to fit the task | 结论 |
+
+这一页要讲清楚的三件事：
+
+- **effort 改变的是工作量，不是能力。** 模型还是同一个，它只是被引导着多想、多查、多验证。
+- **紫色块和方块数量都在变。** effort 高不只是"想得久"，还意味着多跑几轮 Agent loop。
+- **token 比调用次数涨得快。** 从 medium 到 max，调用次数是 2.3 倍，token 是 4.5 倍。原因是每多一次调用，都要把之前积累的全部内容再发一遍，越靠后的调用越贵。
+
+画面底部给了一个针对这个例子的建议：**给一个不熟悉的集成做方案，用 medium 或 high；改一行代码，用 low。**
+
+### 把两页合起来讲
+
+| | 换模型（10d） | 换 effort（10e） |
+|---|---|---|
+| 提示词和工具 | 不变 | 不变 |
+| 调用次数 | 基本不变 | 明显变化 |
+| 处理的 token 总量 | 基本不变 | 明显变化 |
+| 每个 token 的单价 | **变** | 不变 |
+| 每次调用的速度 | **变** | 不变 |
+| 每一步判断的质量 | **变** | 不变 |
+| 检查得有多全面 | 略有变化 | **变** |
+
+一句话：**模型决定每个 token 多贵、每一步多聪明；effort 决定一共走多少步、想多久。** 这正是 10c 那个公式的两个因子。
+
+### 针对这个例子怎么选
+
+"How do we integrate DCM into this project?" 是一个开放的、需要综合规范和代码的规划问题：
+
+- **模型**：偏向更强的。漏掉 Rte 端口或 ComM 依赖这类问题，代价远大于多花的那点钱。
+- **effort**：medium 起步。如果结果要直接拿去实施，用 high 让它多核对一遍。
+- **不需要 max**：除非这是一次性的关键决策，否则多出来的验证不值 4 倍多的成本。
+
+反过来，像"把这个变量名改掉"这种明确的小改动，小模型加 low 就够了。
 
 ## 需要真正搞懂的概念
 

@@ -612,6 +612,85 @@ Two independent knobs, multiplied together
 |---|---|---|
 | 0.4 s | Two independent knobs, multiplied together | 两个独立的旋钮，效果相乘 |
 
+## 10d · 同一个请求，三个模型
+
+`10d_same_task_models.gif`
+
+```
+① Same request, same harness, same skill: only the model differs
+② Each call takes longer with a bigger model: more compute per token
+③ The smaller model is done first, but took a wrong turn and missed a step
+④ The larger models follow the whole workflow; the largest notices more
+⑤ The token counts are about the same. The price per token is not
+⑥ Model = how good each decision is, and what each token costs
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① Same request, same harness, same skill: only the model differs | ① 同样的请求、同样的 harness、同样的 skill：只有模型不同 |
+| 3.0 s | ② Each call takes longer with a bigger model: more compute per token | ② 模型越大，每次调用越久：每个 token 的计算量更多 |
+| 6.2 s | ③ The smaller model is done first, but took a wrong turn and missed a step | ③ 较小的模型最先完成，但走了一次弯路，还漏了一步 |
+| 9.4 s | ④ The larger models follow the whole workflow; the largest notices more | ④ 较大的模型走完了整个流程；最大的还注意到了更多 |
+| 14.6 s | ⑤ The token counts are about the same. The price per token is not | ⑤ token 数量差不多，每个 token 的价格却不一样 |
+| 18.4 s | ⑥ Model = how good each decision is, and what each token costs | ⑥ 模型 = 每一步决定有多好，以及每个 token 多少钱 |
+
+画面上的其他文字：
+
+```
+Smaller model (e.g. Haiku)    5 s per call · 7 calls · done in 35 s
+    RESULT  plan with 3 of 4 steps · missed the Rte ports · 1 call wasted on the wrong file      COST ≈ 1×
+Mid-size model (e.g. Sonnet)  12 s per call · 6 calls · done in 72 s
+    RESULT  complete plan, 4 steps · followed all 5 workflow steps                               COST ≈ 3×
+Larger model (e.g. Opus)      20 s per call · 6 calls · done in 120 s
+    RESULT  complete plan, 4 steps · also flags a ComM dependency the workflow did not mention   COST ≈ 5×
+
+Tokens processed in every lane: about 113k input + under 1k output
+(the prompt is re-sent at every call, so input dominates)
+The model sets the price and speed of every token, and how good each decision is. It does not change the loop.
+timings, costs and outcomes are illustrative
+```
+
+中文（深色框）：模型决定每个 token 的价格和速度，以及每一步决定的质量。它不改变循环本身。时间、成本和结果均为示意。
+
+## 10e · 同一个请求、同一个模型，四档 effort
+
+`10e_same_task_effort.gif`
+
+```
+① Same request, same model: only the effort level differs
+② Low: few steps and little thinking. It skips the spec lookup
+③ Medium: the session you just saw, all five workflow steps
+④ High and max: more thinking, more checks, more calls
+⑤ Tokens grow faster than calls: every call re-sends a longer prompt
+⑥ Effort = how much work, not how smart. Pick it to fit the task
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① Same request, same model: only the effort level differs | ① 同样的请求、同样的模型：只有 effort 档位不同 |
+| 3.0 s | ② Low: few steps and little thinking. It skips the spec lookup | ② Low：步骤少，思考少。它跳过了查规范 |
+| 5.6 s | ③ Medium: the session you just saw, all five workflow steps | ③ Medium：就是你刚看到的那一遍，五步流程全部走完 |
+| 8.6 s | ④ High and max: more thinking, more checks, more calls | ④ High 和 max：更多思考、更多检查、更多调用 |
+| 15.6 s | ⑤ Tokens grow faster than calls: every call re-sends a longer prompt | ⑤ token 比调用次数涨得快：每次调用都重发一个更长的提示词 |
+| 19.0 s | ⑥ Effort = how much work, not how smart. Pick it to fit the task | ⑥ Effort = 做多少工作，而不是有多聪明。按任务来选 |
+
+画面上的其他文字：
+
+```
+low      4 LLM calls   loads the skill, runs the script, checks Os/Rte. Skips the spec lookup            68k input tokens   cost ≈ 0.6×
+medium   6 LLM calls   the session you just saw: all five workflow steps                                113k input tokens   cost ≈ 1×
+high     9 LLM calls   also reads the PduR and ComM config and re-checks the spec                       216k input tokens   cost ≈ 1.9×
+max     14 LLM calls   also reads the Dcm sources, verifies each step, lists open questions             504k input tokens   cost ≈ 4.5×
+
+From medium to max: calls × 2.3, tokens × 4.5.
+Each extra call re-sends everything gathered so far, so later calls are the expensive ones.
+Effort changes how many rounds and how much thinking. It does not change the model.
+A plan for an unfamiliar integration: medium or high. A one-line fix: low.
+all counts are illustrative
+```
+
+中文（底部两段）：从 medium 到 max，调用次数 × 2.3，token × 4.5。每多一次调用，都要把之前积累的全部内容再发一遍，所以越靠后的调用越贵。Effort 改变的是轮数和思考量，不改变模型。给不熟悉的集成做方案：medium 或 high；改一行：low。所有数字均为示意。
+
 ## 汇总
 
 | GIF | 说明条数 |
@@ -639,4 +718,6 @@ Two independent knobs, multiplied together
 | 10a_model | 2 |
 | 10b_effort | 2 |
 | 10c_cost_formula | 1 |
-| **合计** | **102** |
+| 10d_same_task_models | 6 |
+| 10e_same_task_effort | 6 |
+| **合计** | **114** |

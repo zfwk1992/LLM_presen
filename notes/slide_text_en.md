@@ -892,3 +892,87 @@ Plus input tokens: in an agent loop the growing context is re-read at every step
 Ask two questions: how capable does the model need to be, and how carefully does it need to work?
 In agent tasks the input tokens often cost more than the output, because the prompt is sent again at every step.
 ```
+
+---
+
+## 10d · Same request, three models
+
+`10d_same_task_models.gif`
+
+**Steps**
+
+```
+① Same request, same harness, same skill: only the model differs
+② Each call takes longer with a bigger model: more compute per token
+③ The smaller model is done first, but took a wrong turn and missed a step
+④ The larger models follow the whole workflow; the largest notices more
+⑤ The token counts are about the same. The price per token is not
+⑥ Model = how good each decision is, and what each token costs
+```
+
+**Also on screen**
+
+```
+Smaller model (e.g. Haiku)    5 s per call · 7 calls · done in 35 s
+    RESULT  plan with 3 of 4 steps · missed the Rte ports · 1 call wasted on the wrong file      COST ≈ 1×
+Mid-size model (e.g. Sonnet)  12 s per call · 6 calls · done in 72 s
+    RESULT  complete plan, 4 steps · followed all 5 workflow steps                               COST ≈ 3×
+Larger model (e.g. Opus)      20 s per call · 6 calls · done in 120 s
+    RESULT  complete plan, 4 steps · also flags a ComM dependency the workflow did not mention   COST ≈ 5×
+
+Tokens processed in every lane: about 113k input + under 1k output
+(the prompt is re-sent at every call, so input dominates)
+The model sets the price and speed of every token, and how good each decision is. It does not change the loop.
+timings, costs and outcomes are illustrative
+```
+
+**Extra**
+
+```
+All three models receive the same prompts and use the same tools. The agent loop is identical.
+The cost difference comes almost entirely from the price per token, not from the number of tokens.
+What you buy with a larger model is better judgement at every step: fewer wrong turns, fewer things missed.
+In this task the model reads about a hundred times more than it writes.
+```
+
+---
+
+## 10e · Same request, same model, four effort levels
+
+`10e_same_task_effort.gif`
+
+**Steps**
+
+```
+① Same request, same model: only the effort level differs
+② Low: few steps and little thinking. It skips the spec lookup
+③ Medium: the session you just saw, all five workflow steps
+④ High and max: more thinking, more checks, more calls
+⑤ Tokens grow faster than calls: every call re-sends a longer prompt
+⑥ Effort = how much work, not how smart. Pick it to fit the task
+```
+
+**Also on screen**
+
+```
+low      4 LLM calls   loads the skill, runs the script, checks Os/Rte. Skips the spec lookup            68k input tokens   cost ≈ 0.6×
+medium   6 LLM calls   the session you just saw: all five workflow steps                                113k input tokens   cost ≈ 1×
+high     9 LLM calls   also reads the PduR and ComM config and re-checks the spec                       216k input tokens   cost ≈ 1.9×
+max     14 LLM calls   also reads the Dcm sources, verifies each step, lists open questions             504k input tokens   cost ≈ 4.5×
+
+thinking · a tool call (then the harness runs it) · the final answer
+From medium to max: calls × 2.3, tokens × 4.5.
+Each extra call re-sends everything gathered so far, so later calls are the expensive ones.
+Effort changes how many rounds and how much thinking. It does not change the model.
+A plan for an unfamiliar integration: medium or high. A one-line fix: low.
+all counts are illustrative
+```
+
+**Extra**
+
+```
+Effort does not make the model more capable. It makes the same model think longer and check more.
+Higher effort means more rounds of the agent loop, not only longer thinking.
+Cost grows faster than the number of calls, because every later call carries everything collected before it.
+Model: how capable must it be?  Effort: how carefully must it work?
+```

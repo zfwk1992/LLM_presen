@@ -27,6 +27,12 @@ def example_header(f, title, part):
     f.text((1232, 45), "the request:  “" + REQUEST + "”", inter(12, 600), BLUE, a0, "rm")
 
 
+def settings_header(f, title):
+    """Header for the Claude Code pages that reuse the same request."""
+    header(f, title, "CLAUDE CODE  ·  THE SAME EXAMPLE", ORANGE)
+    f.text((1232, 45), "the request:  “" + REQUEST + "”", inter(12, 600), BLUE, f.v(0.1, 0.5), "rm")
+
+
 def header(f, title, tag="LLM FUNDAMENTALS", col=BLUE):
     a0 = f.v(0.1, 0.5)
     f.spaced((56, 45), tag, inter(12, 700), col, a0, 1.7)

@@ -1,6 +1,6 @@
 # LLM 与 AI Agent 演讲 · 学习笔记
 
-这套笔记和 [../llm_agent_animations_single_page/](../llm_agent_animations_single_page/) 里的 23 个 GIF 一一对应。每篇笔记讲清楚一页动画：画面每一步在演示什么、背后的概念、容易讲错的地方、听众可能问什么。
+这套笔记和 [../llm_agent_animations_single_page/](../llm_agent_animations_single_page/) 里的 25 个 GIF 一一对应。每篇笔记讲清楚一页动画：画面每一步在演示什么、背后的概念、容易讲错的地方、听众可能问什么。
 
 ## 整体故事线
 
@@ -11,7 +11,7 @@
 | LLM Fundamentals | 模型本身到底在做什么？ | 01 → 02a → 02b → 02c → 02d → 02e → 02f → 03 |
 | From LLM to AI Agent | 只会写字的模型怎么"做事"？ | 04a → 04b → 04c → 04d → 04e → 04f → 05 |
 | Extending Capabilities | 怎么让它知道更多、连上更多系统、又不被信息淹没？ | 06 → 07a → 07b → 08 → 09 |
-| Claude Code | 用的时候有哪两个旋钮？ | 10a → 10b → 10c |
+| Claude Code | 用的时候有哪两个旋钮？ | 10a → 10b → 10c → 10d → 10e |
 
 每一章都建立在上一章之上，讲的时候可以反复回扣这三句话：
 
@@ -46,12 +46,16 @@
 | 21 | `10a_model.gif` | 10.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 模型 = 用哪套权重 |
 | 22 | `10b_effort.gif` | 10.6 s | [10_model_vs_effort.md](10_model_vs_effort.md) | Effort = 同一个模型干多少活 |
 | 23 | `10c_cost_formula.gif` | 5.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 两个旋钮相乘 |
+| 24 | `10d_same_task_models.gif` | 22.5 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 同一个 DCM 请求换三个模型：速度、单价、判断质量不同 |
+| 25 | `10e_same_task_effort.gif` | 23.0 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 同一个 DCM 请求换四档 effort：轮数和思考量不同 |
 
 另有 [glossary.md](glossary.md)：中英文术语对照，备查；[captions.md](captions.md)：每页动画底部说明文字的原文和翻译，可直接贴到 PPT。
 
 `02c` 到 `02f`、`04a` 到 `04e` 是后来新增的九页，`02b` 末尾加了一个说明框，原始循环版文件夹里没有这些内容。原来的 `04_agent_loop.gif` 改名为 `04f_agent_loop.gif`，内容没变。生成脚本在 [../tools/anim/](../tools/anim/)，以后要改文字或节奏可以直接改脚本重新生成。
 
-动画总时长约 7 分 05 秒。
+动画总时长约 7 分 50 秒。
+
+`10d` 和 `10e` 沿用 04a–04e 的例子，展示换模型和换 effort 各自改变了什么。里面的时间、成本倍数和结果都是示意值。如果时间有限，可以用这两页代替 `10a`、`10b`，再用 `10c` 的公式收尾。
 
 `04a` 到 `04e` 是一个连续的系列，用同一句请求 "How do we integrate DCM into this project?" 从头讲到尾：第 1 次调用发了什么、LLM 回了什么、第 2 次调用发了什么、完整过程、两层循环。每页右上角显示这句请求，左上角标着 PART 1–5 OF 5。这五页建议连着放。
 
