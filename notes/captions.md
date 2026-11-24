@@ -343,6 +343,58 @@ Repeat until the model replies without a tool call
 
 画面上原有的文字可以直接引用的有两处：上下文面板的标题 `CONTEXT (grows with every step)`（上下文，每一步都在增长），以及退出时的标注 `no tool call → Answer ✓`。
 
+## 04e · 一个 Agent 的实际工作过程
+
+`04e_agent_at_work.gif`
+
+```
+① One request. Project notes and skill descriptions are already in the prompt
+② Call 1: the model sees a matching skill and asks to load it
+③ Call 2: following the skill, it asks to read the Dcm configuration
+④ Calls 3 and 4: it asks to search the routing, then to read the code
+⑤ Call 5: it asks the spec. Only 3 passages of 600 pages come back
+⑥ Call 6: no tool call this time. It writes the answer and the loop ends
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① One request. Project notes and skill descriptions are already in the prompt | ① 一个请求。项目说明和 skill 简介已经在提示词里 |
+| 2.6 s | ② Call 1: the model sees a matching skill and asks to load it | ② 调用 1：模型看到匹配的 skill，要求加载它 |
+| 6.0 s | ③ Call 2: following the skill, it asks to read the Dcm configuration | ③ 调用 2：按照 skill，它要求读取 Dcm 配置 |
+| 9.2 s | ④ Calls 3 and 4: it asks to search the routing, then to read the code | ④ 调用 3 和 4：它要求搜索路由，然后读取代码 |
+| 15.6 s | ⑤ Call 5: it asks the spec. Only 3 passages of 600 pages come back | ⑤ 调用 5：它查询规范。600 页里只返回 3 段 |
+| 18.8 s | ⑥ Call 6: no tool call this time. It writes the answer and the loop ends | ⑥ 调用 6：这次没有工具调用。它写出答案，循环结束 |
+
+画面中间的六张卡片和结尾的深色框：
+
+```
+USER  Analyze how DCM is integrated in this project.
+
+LLM CALL 1  "A skill matches this task. Load it first."
+            asks for  Skill("dcm-guide")
+            harness ran it: SKILL.md loaded: a 4-step checklist   +2.1k
+LLM CALL 2  "Checklist step 1: find the Dcm configuration."
+            asks for  Read("config/Dcm.arxml")
+            harness ran it: 3 protocols, 14 UDS services configured   +6.3k
+LLM CALL 3  "How do requests reach Dcm? Check the routing."
+            asks for  Grep("Dcm", "src/PduR/")
+            harness ran it: PduR_Cfg.c: 2 PDUs routed to Dcm   +0.8k
+LLM CALL 4  "Now the session handling code."
+            asks for  Read("src/Dcm/Dcm_Dsl.c")
+            harness ran it: 612 lines   +9.4k
+LLM CALL 5  "Compare with what the standard requires."
+            asks for  search_spec("Dcm PduR interface")
+            harness ran it: 3 passages from SWS_Dcm, out of 600 pages   +1.8k
+LLM CALL 6  "I have enough. Write the answer."
+            writes  no tool call
+            Dcm is reached through PduR (2 routed PDUs). Dsl handles sessions,
+            Dsp the 14 UDS services. Configured in Dcm.arxml. Matches SWS_Dcm §7.2.
+
+6 LLM calls · 5 tool runs by the harness · the model never opened a file itself
+```
+
+中文（深色框）：6 次 LLM 调用 · harness 执行了 5 次工具 · 模型自己从未打开过任何文件。
+
 ## 05 · Tool Calling
 
 `05_tool_calling.gif`
@@ -523,6 +575,7 @@ Two independent knobs, multiplied together
 | 04b_tool_call_is_text | 6 |
 | 04c_two_loops | 6 |
 | 04d_agent_loop | 0（底部无说明） |
+| 04e_agent_at_work | 6 |
 | 05_tool_calling | 6 |
 | 06_rag | 6 |
 | 07a_mcp_why | 2 |
@@ -532,4 +585,4 @@ Two independent knobs, multiplied together
 | 10a_model | 2 |
 | 10b_effort | 2 |
 | 10c_cost_formula | 1 |
-| **合计** | **90** |
+| **合计** | **96** |

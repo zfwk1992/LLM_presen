@@ -1,6 +1,6 @@
 # LLM 与 AI Agent 演讲 · 学习笔记
 
-这套笔记和 [../llm_agent_animations_single_page/](../llm_agent_animations_single_page/) 里的 21 个 GIF 一一对应。每篇笔记讲清楚一页动画：画面每一步在演示什么、背后的概念、容易讲错的地方、听众可能问什么。
+这套笔记和 [../llm_agent_animations_single_page/](../llm_agent_animations_single_page/) 里的 22 个 GIF 一一对应。每篇笔记讲清楚一页动画：画面每一步在演示什么、背后的概念、容易讲错的地方、听众可能问什么。
 
 ## 整体故事线
 
@@ -9,7 +9,7 @@
 | 章节 | 回答的问题 | 页面 |
 |---|---|---|
 | LLM Fundamentals | 模型本身到底在做什么？ | 01 → 02a → 02b → 02c → 02d → 02e → 02f → 03 |
-| From LLM to AI Agent | 只会写字的模型怎么"做事"？ | 04a → 04b → 04c → 04d → 05 |
+| From LLM to AI Agent | 只会写字的模型怎么"做事"？ | 04a → 04b → 04c → 04d → 04e → 05 |
 | Extending Capabilities | 怎么让它知道更多、连上更多系统、又不被信息淹没？ | 06 → 07a → 07b → 08 → 09 |
 | Claude Code | 用的时候有哪两个旋钮？ | 10a → 10b → 10c |
 
@@ -35,23 +35,26 @@
 | 10 | `04b_tool_call_is_text.gif` | 24.0 s | [04abc_agent_and_llm.md](04abc_agent_and_llm.md) | 工具调用是逐个 token 生成的文字，执行的是 harness |
 | 11 | `04c_two_loops.gif` | 23.5 s | [04abc_agent_and_llm.md](04abc_agent_and_llm.md) | Agent = 一个程序反复调用 LLM，两层循环 |
 | 12 | `04d_agent_loop.gif` | 21.4 s | [04_agent_loop.md](04_agent_loop.md) | 抽象总结：Think → Act → Observe |
-| 13 | `05_tool_calling.gif` | 21.4 s | [05_tool_calling.md](05_tool_calling.md) | 模型只写结构化文本，执行的是 harness |
-| 14 | `06_rag.gif` | 21.4 s | [06_rag.md](06_rag.md) | 先检索，再把检索结果放进 prompt |
-| 15 | `07a_mcp_why.gif` | 6.7 s | [07_mcp.md](07_mcp.md) | M×N 个集成变成 M+N 个 |
-| 16 | `07b_mcp_how.gif` | 16.1 s | [07_mcp.md](07_mcp.md) | 连接、发现、调用三步 |
-| 17 | `08_skills.gif` | 19.4 s | [08_skills.md](08_skills.md) | 三级按需加载，装很多也不占上下文 |
-| 18 | `09_context_engineering.gif` | 23.4 s | [09_context_engineering.md](09_context_engineering.md) | 上下文是有限资源，要管理 |
-| 19 | `10a_model.gif` | 10.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 模型 = 用哪套权重 |
-| 20 | `10b_effort.gif` | 10.6 s | [10_model_vs_effort.md](10_model_vs_effort.md) | Effort = 同一个模型干多少活 |
-| 21 | `10c_cost_formula.gif` | 5.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 两个旋钮相乘 |
+| 13 | `04e_agent_at_work.gif` | 24.0 s | [04e_agent_at_work.md](04e_agent_at_work.md) | 完整模拟：一句请求，6 次 LLM 调用，5 次工具执行 |
+| 14 | `05_tool_calling.gif` | 21.4 s | [05_tool_calling.md](05_tool_calling.md) | 模型只写结构化文本，执行的是 harness |
+| 15 | `06_rag.gif` | 21.4 s | [06_rag.md](06_rag.md) | 先检索，再把检索结果放进 prompt |
+| 16 | `07a_mcp_why.gif` | 6.7 s | [07_mcp.md](07_mcp.md) | M×N 个集成变成 M+N 个 |
+| 17 | `07b_mcp_how.gif` | 16.1 s | [07_mcp.md](07_mcp.md) | 连接、发现、调用三步 |
+| 18 | `08_skills.gif` | 19.4 s | [08_skills.md](08_skills.md) | 三级按需加载，装很多也不占上下文 |
+| 19 | `09_context_engineering.gif` | 23.4 s | [09_context_engineering.md](09_context_engineering.md) | 上下文是有限资源，要管理 |
+| 20 | `10a_model.gif` | 10.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 模型 = 用哪套权重 |
+| 21 | `10b_effort.gif` | 10.6 s | [10_model_vs_effort.md](10_model_vs_effort.md) | Effort = 同一个模型干多少活 |
+| 22 | `10c_cost_formula.gif` | 5.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 两个旋钮相乘 |
 
 另有 [glossary.md](glossary.md)：中英文术语对照，备查；[captions.md](captions.md)：每页动画底部说明文字的原文和翻译，可直接贴到 PPT。
 
-`02c` 到 `02f`、`04a` 到 `04c` 是后来新增的七页，`02b` 末尾加了一个说明框，原始循环版文件夹里没有这些内容。原来的 `04_agent_loop.gif` 改名为 `04d_agent_loop.gif`，内容没变。生成脚本在 [../tools/anim/](../tools/anim/)，以后要改文字或节奏可以直接改脚本重新生成。
+`02c` 到 `02f`、`04a` 到 `04c`、`04e` 是后来新增的八页，`02b` 末尾加了一个说明框，原始循环版文件夹里没有这些内容。原来的 `04_agent_loop.gif` 改名为 `04d_agent_loop.gif`，内容没变。生成脚本在 [../tools/anim/](../tools/anim/)，以后要改文字或节奏可以直接改脚本重新生成。
 
-动画总时长约 6 分 15 秒。
+动画总时长约 6 分 40 秒。
 
-`04a` 到 `04c` 用同一个例子（调查 DCM 怎么工作）把 Agent 和 LLM 接起来，比 `04d`、`05` 更具体。建议按 04a → 04b → 04c → 04d → 05 的顺序；时间紧时 `04d` 和 `05` 可以只留一页。
+`04a` 到 `04c` 用同一个例子（调查 DCM 怎么工作）把 Agent 和 LLM 接起来，比 `04d`、`05` 更具体。建议按 04a → 04b → 04c → 04d → 04e → 05 的顺序；时间紧时 `04d` 和 `05` 可以只留一页。
+
+`04e` 是一次完整任务的模拟（"Analyze how DCM is integrated in this project"），同时用到了 skill、项目说明、源码和规范检索。它适合作为第二章的收尾，或者第三章的开场：先看到一次完整的过程，再逐个展开 RAG、MCP、Skills 和上下文管理。
 
 `02c` 到 `02f` 都在讲 embedding 和生成循环之间的那一段，四页全放会偏长。建议的取舍：
 

@@ -472,6 +472,63 @@ Nobody scripted these four steps. The model chose each one after seeing the prev
 
 ---
 
+## 04e · An agent at work
+
+`04e_agent_at_work.gif`
+
+**Steps**
+
+```
+① One request. Project notes and skill descriptions are already in the prompt
+② Call 1: the model sees a matching skill and asks to load it
+③ Call 2: following the skill, it asks to read the Dcm configuration
+④ Calls 3 and 4: it asks to search the routing, then to read the code
+⑤ Call 5: it asks the spec. Only 3 passages of 600 pages come back
+⑥ Call 6: no tool call this time. It writes the answer and the loop ends
+```
+
+**Also on screen**
+
+```
+USER  Analyze how DCM is integrated in this project.
+
+LLM CALL 1  "A skill matches this task. Load it first."
+            asks for  Skill("dcm-guide")
+            harness ran it: SKILL.md loaded: a 4-step checklist   +2.1k
+LLM CALL 2  "Checklist step 1: find the Dcm configuration."
+            asks for  Read("config/Dcm.arxml")
+            harness ran it: 3 protocols, 14 UDS services configured   +6.3k
+LLM CALL 3  "How do requests reach Dcm? Check the routing."
+            asks for  Grep("Dcm", "src/PduR/")
+            harness ran it: PduR_Cfg.c: 2 PDUs routed to Dcm   +0.8k
+LLM CALL 4  "Now the session handling code."
+            asks for  Read("src/Dcm/Dcm_Dsl.c")
+            harness ran it: 612 lines   +9.4k
+LLM CALL 5  "Compare with what the standard requires."
+            asks for  search_spec("Dcm PduR interface")
+            harness ran it: 3 passages from SWS_Dcm, out of 600 pages   +1.8k
+LLM CALL 6  "I have enough. Write the answer."
+            writes  no tool call
+            Dcm is reached through PduR (2 routed PDUs). Dsl handles sessions,
+            Dsp the 14 UDS services. Configured in Dcm.arxml. Matches SWS_Dcm §7.2.
+
+The prompt: 14.7k → 16.8k → 23.1k → 23.9k → 33.3k → 35.1k tokens
+sent again in full at every call
+6 LLM calls · 5 tool runs by the harness · the model never opened a file itself
+token counts are illustrative
+```
+
+**Extra**
+
+```
+At the start only the project notes and one line per skill are in the prompt. Everything else is fetched on demand.
+Nobody scripted these six steps. The model chose each one after seeing the previous result.
+The 600-page specification never enters the prompt as a whole. Only the three relevant passages do.
+Most of the project was never opened. The agent fetched only what it judged necessary.
+```
+
+---
+
 ## 05 · Tool calling
 
 `05_tool_calling.gif`

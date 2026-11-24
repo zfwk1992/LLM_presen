@@ -11,6 +11,7 @@
 | `one_big_prompt.py` | `04a_one_big_prompt.gif` |
 | `tool_call_is_text.py` | `04b_tool_call_is_text.gif` |
 | `two_loops.py` | `04c_two_loops.gif` |
+| `agent_at_work.py` | `04e_agent_at_work.gif` |
 | `note_02b.py` | 给 `02b_embedding_space.gif` 加右下角的说明框 |
 | `gifout.py` | 公用部分：标题、底部说明条、token 方块、GIF 输出 |
 
