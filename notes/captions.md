@@ -500,6 +500,155 @@ The answer is grounded in your documents, with no retraining
 | 11.4 s | Insert the retrieved chunks into the prompt | 把检索到的块插入 prompt |
 | 14.4 s | The answer is grounded in your documents, with no retraining | 回答以你的文档为依据，无需重新训练 |
 
+## 06a–06c · RAG 细节，三页
+
+这三页把 06 的总览拆开，沿用 DCM 例子里的那次规范检索。每页左上角标着 PART 1–3 OF 3。
+
+## 06a · RAG 细节 1/3：从 PDF 到 chunk
+
+`06a_rag_pdf_to_chunks.gif`
+
+```
+① The specification is a 600-page PDF: far too big for the prompt
+② Step 1: extract the plain text. Layout, headers and page breaks go
+③ Step 2: cut the text into chunks of a few hundred tokens
+④ Chunks follow the section structure and overlap a little
+⑤ Each chunk keeps its metadata: id, section, page
+⑥ Result: about 1,800 small pieces. Still text, not vectors
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① The specification is a 600-page PDF: far too big for the prompt | ① 规范是一份 600 页的 PDF：对提示词来说太大了 |
+| 3.8 s | ② Step 1: extract the plain text. Layout, headers and page breaks go | ② 第 1 步：提取纯文本。版式、页眉和分页都去掉 |
+| 7.4 s | ③ Step 2: cut the text into chunks of a few hundred tokens | ③ 第 2 步：把文本切成几百个 token 的小块 |
+| 11.4 s | ④ Chunks follow the section structure and overlap a little | ④ 切块沿着章节结构，并且相邻块有少量重叠 |
+| 14.6 s | ⑤ Each chunk keeps its metadata: id, section, page | ⑤ 每个块保留自己的元数据：编号、章节、页码 |
+| 17.6 s | ⑥ Result: about 1,800 small pieces. Still text, not vectors | ⑥ 结果：大约 1,800 个小片段。它们仍是文字，不是向量 |
+
+画面上的其他文字：
+
+```
+THE PDF: 600 pages · about 450,000 tokens · tables and figures need extra care
+1 EXTRACTED TEXT → 2 CHUNKS
+
+chunk #412   §7.2.1 · p. 212 · about 250 tokens
+The Dcm receives diagnostic requests from the PduR. Reception starts with Dcm_StartOfReception;
+the data is copied with Dcm_CopyRxData and finished by Dcm_TpRxIndication. …
+
+chunk #413   §7.2.1 · p. 213 · about 250 tokens
+… finished by Dcm_TpRxIndication.   (overlap: repeated from #412)
+The response is sent with PduR_DcmTransmit. The PduR fetches the data through Dcm_CopyTxData
+and confirms with Dcm_TpTxConfirmation. …
+
+chunk #414   §7.2.2 · p. 213 · about 250 tokens
+While a request is processed, the Dcm keeps the channel awake by calling ComM_DCM_ActiveDiagnostic
+and releases it with ComM_DCM_InactiveDiagnostic. …
+
+… 1,840 chunks in total, each a few hundred tokens, each with its id, section and page
+A sentence cut in half would lose its meaning: hence sections and overlap.
+Chunking is ordinary text processing. No AI model has been used yet.
+section numbers, pages and wording are illustrative
+```
+
+中文（结论）：切块是普通的文本处理，到这里还没有用到任何 AI 模型。相邻块之间有重叠，是为了不把一句话从中间切断。章节号、页码和措辞均为示意。
+
+## 06b · RAG 细节 2/3：从 chunk 到向量
+
+`06b_rag_chunks_to_vectors.gif`
+
+```
+① Each chunk goes through an embedding model: a separate network, not the LLM
+② Out comes one vector for the whole chunk: its meaning as about 1,000 numbers
+③ Vector, text and metadata are stored together in the vector database
+④ Repeat for every chunk, once. This is the offline indexing step
+⑤ Careful: this is not the embedding layer inside the LLM
+⑥ Inside the LLM: one vector per token. Here: one vector per passage
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① Each chunk goes through an embedding model: a separate network, not the LLM | ① 每个块经过一个 embedding 模型：一个独立的网络，不是 LLM |
+| 3.8 s | ② Out comes one vector for the whole chunk: its meaning as about 1,000 numbers | ② 输出的是代表整个块的一个向量：用约 1,000 个数字表示它的含义 |
+| 6.6 s | ③ Vector, text and metadata are stored together in the vector database | ③ 向量、原文和元数据一起存入向量数据库 |
+| 9.2 s | ④ Repeat for every chunk, once. This is the offline indexing step | ④ 对每个块重复一次。这是离线的建索引步骤 |
+| 12.2 s | ⑤ Careful: this is not the embedding layer inside the LLM | ⑤ 注意：这不是 LLM 内部的 embedding 层 |
+| 15.8 s | ⑥ Inside the LLM: one vector per token. Here: one vector per passage | ⑥ LLM 内部：每个 token 一个向量。这里：每段文字一个向量 |
+
+画面上的其他文字：
+
+```
+Embedding model: a separate, smaller network, not the LLM that answers you
+1 vector for the whole chunk   [ 0.21, −0.64, 0.08, 0.37, … ]   about 1,000 numbers (size depends on the model)
+
+VECTOR DATABASE
+ID     VECTOR     TEXT (kept next to the vector)                                   METADATA
+#412   ▮▮▮▮▮▮     The Dcm receives diagnostic requests from the PduR. …            §7.2.1 · p. 212
+#413   ▮▮▮▮▮▮     The response is sent with PduR_DcmTransmit. …                    §7.2.1 · p. 213
+#414   ▮▮▮▮▮▮     While a request is processed, the Dcm keeps the channel awake …  §7.2.2 · p. 213
+… 1,840 rows, built once and reused for every question
+
+TWO DIFFERENT THINGS ARE CALLED "EMBEDDING"
+            Embedding layer inside the LLM (pages 02a–02d)    Embedding model for search (this page)
+Input       one token                                         a whole passage
+How         a table lookup, no computation                    a full network reads the passage
+Output      250 tokens → 250 vectors                          250 tokens → 1 vector
+Captures    the token by itself, no context                   what the passage is about
+Used for    the first step inside the LLM                     finding similar text, outside the LLM
+
+Same idea (meaning as direction), different job: one feeds the network, the other is for searching.
+```
+
+中文（结论）：思想相同（用方向表示含义），用途不同：一个是给网络当输入，另一个是用来检索。LLM 内部的 embedding 层是查表，每个 token 一个向量；这里的 embedding 模型是一个完整的网络读完整段，输出一个向量。
+
+## 06c · RAG 细节 3/3：Agent 怎么用它
+
+`06c_rag_agent_uses_it.gif`
+
+```
+① In call 3 the LLM writes a tool call: search the specification
+② The harness runs the search tool. The question is embedded by the same model
+③ The question vector is compared with all 1,840 chunk vectors
+④ The three closest chunks win. This is cosine similarity at work
+⑤ Their text, not their vectors, goes back as the tool result
+⑥ The LLM reads 3 passages instead of 600 pages. It never sees a vector
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① In call 3 the LLM writes a tool call: search the specification | ① 在第 3 次调用中，LLM 写出一个工具调用：搜索规范 |
+| 3.4 s | ② The harness runs the search tool. The question is embedded by the same model | ② harness 运行搜索工具。问题由同一个模型转成向量 |
+| 7.4 s | ③ The question vector is compared with all 1,840 chunk vectors | ③ 问题向量与全部 1,840 个块的向量逐一比较 |
+| 11.4 s | ④ The three closest chunks win. This is cosine similarity at work | ④ 最接近的三个块胜出。这就是余弦相似度在起作用 |
+| 14.2 s | ⑤ Their text, not their vectors, goes back as the tool result | ⑤ 返回的工具结果是它们的文字，而不是向量 |
+| 17.6 s | ⑥ The LLM reads 3 passages instead of 600 pages. It never sees a vector | ⑥ LLM 读到的是 3 段文字，而不是 600 页。它从未见过向量 |
+
+画面上的其他文字：
+
+```
+LLM CALL 3 writes a tool call: search_spec("Dcm integration PduR ComM")   (just text, as always)
+Search tool: run by the harness, e.g. provided by an MCP server
+Embedding model: the same one used to build the index
+QUESTION VECTOR: the question as about 1,000 numbers, same space as the chunk vectors
+compared with every row:  cos θ = a · b / (‖a‖ ‖b‖)
+
+VECTOR DATABASE · 1,840 chunks
+#97     Dependencies to other modules: header file structure …        0.41
+#412    The Dcm receives diagnostic requests from the PduR …          0.91   ← top 3
+#413    The response is sent with PduR_DcmTransmit …                  0.88   ← top 3
+#414    … keeps the channel awake by calling ComM_DCM_Active…         0.86   ← top 3
+#655    Dcm_GetSesCtrlType returns the active session …               0.22
+#1502   Configuration container DcmDsdServiceTable …                  0.18
+
+tool_result: the TEXT of the top 3 · about 1,800 tokens
+Vectors are only used to FIND the right pieces. What goes into the prompt is their text.
+appended to the prompt (+1.8k) · LLM call 4 reads it like any other text
+600 pages stay on disk. 3 passages enter the prompt. The LLM never sees a vector from this database.
+similarity values, section numbers and wording are illustrative
+```
+
+中文（结论）：向量只用来找到正确的片段，进入提示词的是它们的文字。600 页留在磁盘上，3 段进入提示词，LLM 从未见过这个数据库里的任何向量。相似度数值、章节号和措辞均为示意。
+
 ## 07a · MCP（为什么需要）
 
 `07a_mcp_why.gif`
@@ -711,6 +860,9 @@ all counts are illustrative
 | 04f_agent_loop | 0（底部无说明） |
 | 05_tool_calling | 6 |
 | 06_rag | 6 |
+| 06a_rag_pdf_to_chunks | 6 |
+| 06b_rag_chunks_to_vectors | 6 |
+| 06c_rag_agent_uses_it | 6 |
 | 07a_mcp_why | 2 |
 | 07b_mcp_how | 4 |
 | 08_skills | 5 |
@@ -720,4 +872,4 @@ all counts are illustrative
 | 10c_cost_formula | 1 |
 | 10d_same_task_models | 6 |
 | 10e_same_task_effort | 6 |
-| **合计** | **114** |
+| **合计** | **132** |

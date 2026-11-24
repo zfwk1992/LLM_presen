@@ -672,6 +672,160 @@ The quality of the answer depends mostly on whether the right chunks were retrie
 
 ---
 
+## 06a–06c · RAG in detail, three parts
+
+These pages expand the RAG overview, using the specification search from the DCM example.
+
+---
+
+## 06a · RAG in detail 1/3: from a PDF to chunks
+
+`06a_rag_pdf_to_chunks.gif`
+
+**Steps**
+
+```
+① The specification is a 600-page PDF: far too big for the prompt
+② Step 1: extract the plain text. Layout, headers and page breaks go
+③ Step 2: cut the text into chunks of a few hundred tokens
+④ Chunks follow the section structure and overlap a little
+⑤ Each chunk keeps its metadata: id, section, page
+⑥ Result: about 1,800 small pieces. Still text, not vectors
+```
+
+**Also on screen**
+
+```
+THE PDF: 600 pages · about 450,000 tokens · tables and figures need extra care
+1 EXTRACTED TEXT → 2 CHUNKS
+
+chunk #412   §7.2.1 · p. 212 · about 250 tokens
+The Dcm receives diagnostic requests from the PduR. Reception starts with Dcm_StartOfReception;
+the data is copied with Dcm_CopyRxData and finished by Dcm_TpRxIndication. …
+
+chunk #413   §7.2.1 · p. 213 · about 250 tokens
+… finished by Dcm_TpRxIndication.   (overlap: repeated from #412)
+The response is sent with PduR_DcmTransmit. The PduR fetches the data through Dcm_CopyTxData
+and confirms with Dcm_TpTxConfirmation. …
+
+chunk #414   §7.2.2 · p. 213 · about 250 tokens
+While a request is processed, the Dcm keeps the channel awake by calling ComM_DCM_ActiveDiagnostic
+and releases it with ComM_DCM_InactiveDiagnostic. …
+
+… 1,840 chunks in total, each a few hundred tokens, each with its id, section and page
+A sentence cut in half would lose its meaning: hence sections and overlap.
+Chunking is ordinary text processing. No AI model has been used yet.
+section numbers, pages and wording are illustrative
+```
+
+**Extra**
+
+```
+The whole specification does not fit into the prompt, so it is cut into small pieces first.
+Cutting along sections and with a little overlap keeps each piece understandable on its own.
+The metadata is what later allows the answer to cite section and page.
+```
+
+---
+
+## 06b · RAG in detail 2/3: from chunks to vectors
+
+`06b_rag_chunks_to_vectors.gif`
+
+**Steps**
+
+```
+① Each chunk goes through an embedding model: a separate network, not the LLM
+② Out comes one vector for the whole chunk: its meaning as about 1,000 numbers
+③ Vector, text and metadata are stored together in the vector database
+④ Repeat for every chunk, once. This is the offline indexing step
+⑤ Careful: this is not the embedding layer inside the LLM
+⑥ Inside the LLM: one vector per token. Here: one vector per passage
+```
+
+**Also on screen**
+
+```
+Embedding model: a separate, smaller network, not the LLM that answers you
+1 vector for the whole chunk   [ 0.21, −0.64, 0.08, 0.37, … ]   about 1,000 numbers (size depends on the model)
+
+VECTOR DATABASE
+ID     VECTOR     TEXT (kept next to the vector)                                   METADATA
+#412   ▮▮▮▮▮▮     The Dcm receives diagnostic requests from the PduR. …            §7.2.1 · p. 212
+#413   ▮▮▮▮▮▮     The response is sent with PduR_DcmTransmit. …                    §7.2.1 · p. 213
+#414   ▮▮▮▮▮▮     While a request is processed, the Dcm keeps the channel awake …  §7.2.2 · p. 213
+… 1,840 rows, built once and reused for every question
+
+TWO DIFFERENT THINGS ARE CALLED "EMBEDDING"
+            Embedding layer inside the LLM (pages 02a–02d)    Embedding model for search (this page)
+Input       one token                                         a whole passage
+How         a table lookup, no computation                    a full network reads the passage
+Output      250 tokens → 250 vectors                          250 tokens → 1 vector
+Captures    the token by itself, no context                   what the passage is about
+Used for    the first step inside the LLM                     finding similar text, outside the LLM
+
+Same idea (meaning as direction), different job: one feeds the network, the other is for searching.
+```
+
+**Extra**
+
+```
+The embedding model is not the LLM. It is a separate model whose only job is to turn a passage into one vector.
+Inside the LLM every token gets its own vector. Here a whole passage gets a single vector.
+The vectors are stored next to the original text. The vector is for finding, the text is for reading.
+```
+
+---
+
+## 06c · RAG in detail 3/3: how the agent uses it
+
+`06c_rag_agent_uses_it.gif`
+
+**Steps**
+
+```
+① In call 3 the LLM writes a tool call: search the specification
+② The harness runs the search tool. The question is embedded by the same model
+③ The question vector is compared with all 1,840 chunk vectors
+④ The three closest chunks win. This is cosine similarity at work
+⑤ Their text, not their vectors, goes back as the tool result
+⑥ The LLM reads 3 passages instead of 600 pages. It never sees a vector
+```
+
+**Also on screen**
+
+```
+LLM CALL 3 writes a tool call: search_spec("Dcm integration PduR ComM")   (just text, as always)
+Search tool: run by the harness, e.g. provided by an MCP server
+Embedding model: the same one used to build the index
+QUESTION VECTOR: the question as about 1,000 numbers, same space as the chunk vectors
+compared with every row:  cos θ = a · b / (‖a‖ ‖b‖)
+
+VECTOR DATABASE · 1,840 chunks
+#97     Dependencies to other modules: header file structure …        0.41
+#412    The Dcm receives diagnostic requests from the PduR …          0.91   ← top 3
+#413    The response is sent with PduR_DcmTransmit …                  0.88   ← top 3
+#414    … keeps the channel awake by calling ComM_DCM_Active…         0.86   ← top 3
+#655    Dcm_GetSesCtrlType returns the active session …               0.22
+#1502   Configuration container DcmDsdServiceTable …                  0.18
+
+tool_result: the TEXT of the top 3 · about 1,800 tokens
+Vectors are only used to FIND the right pieces. What goes into the prompt is their text.
+appended to the prompt (+1.8k) · LLM call 4 reads it like any other text
+600 pages stay on disk. 3 passages enter the prompt. The LLM never sees a vector from this database.
+similarity values, section numbers and wording are illustrative
+```
+
+**Extra**
+
+```
+For the agent, retrieval is just another tool call. The model does not know vectors are involved.
+This is the place where cosine similarity is really computed: outside the LLM, between the question and every chunk.
+Only the text of the best chunks is put into the prompt. The vectors never reach the LLM.
+```
+
+---
+
 ## 07a · MCP: why
 
 `07a_mcp_why.gif`

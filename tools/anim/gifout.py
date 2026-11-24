@@ -27,6 +27,59 @@ def example_header(f, title, part):
     f.text((1232, 45), "the request:  “" + REQUEST + "”", inter(12, 600), BLUE, a0, "rm")
 
 
+# Three chunks of the (illustrative) Dcm specification, shared by the RAG pages.
+CHUNKS = [
+    ("#412", "§7.2.1", "p. 212",
+     "The Dcm receives diagnostic requests from the PduR. Reception starts with Dcm_StartOfReception; "
+     "the data is copied with Dcm_CopyRxData and finished by Dcm_TpRxIndication."),
+    ("#413", "§7.2.1", "p. 213",
+     "The response is sent with PduR_DcmTransmit. The PduR fetches the data through Dcm_CopyTxData "
+     "and confirms with Dcm_TpTxConfirmation."),
+    ("#414", "§7.2.2", "p. 213",
+     "While a request is processed, the Dcm keeps the channel awake by calling ComM_DCM_ActiveDiagnostic "
+     "and releases it with ComM_DCM_InactiveDiagnostic."),
+]
+OVERLAP = "… finished by Dcm_TpRxIndication."
+
+
+def rag_header(f, title, part):
+    header(f, title, f"EXTENDING CAPABILITIES  ·  RAG IN DETAIL, PART {part} OF 3", GREEN)
+    f.text((1232, 45), "the document:  AUTOSAR_SWS_Dcm.pdf  ·  600 pages", inter(12, 600), GREEN, f.v(0.1, 0.5), "rm")
+
+
+def wrap(text, font, maxw):
+    lines, cur = [], ""
+    for word in text.split(" "):
+        trial = (cur + " " + word).strip()
+        if font.getlength(trial) / S <= maxw or not cur:
+            cur = trial
+        else:
+            lines.append(cur); cur = word
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+def para(f, x, y, text, font, col, a, maxw, lh, max_lines=99):
+    """Draw wrapped text; returns the y of the line after the last one."""
+    lines = wrap(text, font, maxw)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        lines[-1] = lines[-1].rstrip(" .,;") + " …"
+    for i, line in enumerate(lines):
+        f.text((x, y + lh * i), line, font, col, a)
+    return y + lh * len(lines)
+
+
+def vec(f, x, y, seed, n, a=1.0, cell=10, h=14):
+    """A small vector strip with n cells."""
+    import random
+    from inside_transformer import CELLS
+    r = random.Random(seed)
+    for i in range(n):
+        f.rrect((x + i * (cell + 1), y, x + i * (cell + 1) + cell, y + h), 2, fill=CELLS[r.randrange(len(CELLS))], a=a)
+
+
 def settings_header(f, title):
     """Header for the Claude Code pages that reuse the same request."""
     header(f, title, "CLAUDE CODE  ·  THE SAME EXAMPLE", ORANGE)

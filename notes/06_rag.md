@@ -2,6 +2,8 @@
 
 ![RAG](../llm_agent_animations_single_page/06_rag.gif)
 
+> 这一页是总览。想把每一步讲细（PDF 怎么变成 chunk、chunk 怎么变成向量、它和 LLM 内部的 embedding 层有什么区别、Agent 实际怎么调用），看 [06abc_rag_in_detail.md](06abc_rag_in_detail.md) 里的三页。
+
 > **一句话**：模型不知道你们公司的文档。RAG 的做法是先把相关的段落找出来，贴进 prompt，再让模型回答。模型本身不需要重新训练。
 
 ## 在演讲里的位置

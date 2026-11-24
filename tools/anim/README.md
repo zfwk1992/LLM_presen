@@ -13,6 +13,9 @@
 | `second_call.py` | `04c_second_call.gif` |
 | `agent_at_work.py` | `04d_agent_at_work.gif` |
 | `two_loops.py` | `04e_two_loops.gif` |
+| `rag_pdf_to_chunks.py` | `06a_rag_pdf_to_chunks.gif` |
+| `rag_chunks_to_vectors.py` | `06b_rag_chunks_to_vectors.gif` |
+| `rag_agent_uses_it.py` | `06c_rag_agent_uses_it.gif` |
 | `same_task_models.py` | `10d_same_task_models.gif` |
 | `same_task_effort.py` | `10e_same_task_effort.gif` |
 | `note_02b.py` | 给 `02b_embedding_space.gif` 加右下角的说明框 |
