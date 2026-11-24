@@ -10,9 +10,15 @@ def mix(c0, c1, m):
     return tuple(round(a + (b - a) * m) for a, b in zip(c0, c1))
 
 
-def header(f, title):
+GREEN, GREEN_F = (30, 158, 106), (226, 245, 236)
+TEAL, TEAL_F = (20, 148, 165), (222, 242, 245)
+YELLOW, YELLOW_F = (202, 138, 4), (253, 243, 215)
+SLATE, SLATE_F = (107, 114, 128), (229, 231, 235)
+
+
+def header(f, title, tag="LLM FUNDAMENTALS", col=BLUE):
     a0 = f.v(0.1, 0.5)
-    f.spaced((56, 45), "LLM FUNDAMENTALS", inter(12, 700), BLUE, a0, 1.7)
+    f.spaced((56, 45), tag, inter(12, 700), col, a0, 1.7)
     f.text((56, 77), title, inter(30, 700), INK, a0)
 
 

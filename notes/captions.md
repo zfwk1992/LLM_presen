@@ -221,9 +221,107 @@ Autoregressive: one token per step, until <end> or max_tokens
 | 14.8 s | ④ Repeat: each new token becomes part of the next input | ④ 重复：每个新 token 都成为下一次输入的一部分 |
 | 20.9 s | Autoregressive: one token per step, until \<end\> or max_tokens | 自回归：每步一个 token，直到 \<end\> 或 max_tokens |
 
-## 04 · Agent Loop
+## 04a · LLM 实际收到了什么
 
-`04_agent_loop.gif`
+`04a_one_big_prompt.gif`
+
+```
+① You type one short message
+② The harness adds the rest: system prompt, tools, CLAUDE.md, skill list
+③ Everything is joined into one long token sequence
+④ That whole sequence goes into the LLM at once
+⑤ Skills: only the one-line descriptions are in it, not the full text
+⑥ The context window is the prompt: you typed a tiny part of it
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① You type one short message | ① 你输入一句很短的话 |
+| 3.6 s | ② The harness adds the rest: system prompt, tools, CLAUDE.md, skill list | ② harness 补上其余部分：系统提示、工具、CLAUDE.md、skill 列表 |
+| 7.0 s | ③ Everything is joined into one long token sequence | ③ 所有内容被拼成一条很长的 token 序列 |
+| 11.6 s | ④ That whole sequence goes into the LLM at once | ④ 这一整条序列一次性进入 LLM |
+| 15.0 s | ⑤ Skills: only the one-line descriptions are in it, not the full text | ⑤ Skill：里面只有一行简介，没有全文 |
+| 18.6 s | ⑥ The context window is the prompt: you typed a tiny part of it | ⑥ 上下文窗口就是提示词：你打的只是其中极小的一部分 |
+
+画面上的其他文字：
+
+```
+The LLM sees tokens. It has no idea which part you typed.
+dcm-guide: only its one-line description is in here.
+The full SKILL.md is added later, if the model decides the task needs it.
+The context window is the prompt. You typed 9 of its 14,709 tokens.
+```
+
+中文：LLM 看到的是 token，它不知道哪一部分是你打的。dcm-guide：这里只有它的一行简介。完整的 SKILL.md 之后才会加入，前提是模型判断任务需要它。上下文窗口就是提示词。在它的 14,709 个 token 里，你打了 9 个。
+
+## 04b · 工具调用只是生成的文字
+
+`04b_tool_call_is_text.gif`
+
+```
+① The whole prompt goes into the LLM
+② The reply comes out one token at a time: one forward pass each
+③ The tokens spell a tool call. To the LLM it is just text
+④ The LLM stops at <end>. Nothing has been executed yet
+⑤ The harness reads the text and runs the tool on your machine
+⑥ The result is added to the prompt, ready for the next LLM call
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① The whole prompt goes into the LLM | ① 整个提示词进入 LLM |
+| 3.2 s | ② The reply comes out one token at a time: one forward pass each | ② 回复一次出来一个 token：每个 token 一次前向传播 |
+| 8.2 s | ③ The tokens spell a tool call. To the LLM it is just text | ③ 这些 token 拼出一个工具调用。对 LLM 来说它只是文字 |
+| 11.2 s | ④ The LLM stops at \<end\>. Nothing has been executed yet | ④ LLM 在 \<end\> 处停止。此时什么都还没有执行 |
+| 14.0 s | ⑤ The harness reads the text and runs the tool on your machine | ⑤ harness 读取这段文字，在你的机器上运行工具 |
+| 18.0 s | ⑥ The result is added to the prompt, ready for the next LLM call | ⑥ 结果被加入提示词，准备下一次调用 LLM |
+
+画面上的其他文字：
+
+```
+24 tokens, 24 forward passes. Then the LLM is finished.
+No file was read. No command was run.
+The LLM writes. The harness acts.
+```
+
+中文：24 个 token，24 次前向传播。然后 LLM 就结束了。没有读取任何文件，没有运行任何命令。LLM 负责写，harness 负责做。
+
+## 04c · 两层循环
+
+`04c_two_loops.gif`
+
+```
+① The harness builds the prompt and calls the LLM
+② Inside the call, the generation loop writes a tool call token by token
+③ The harness runs the tool and adds the result to the prompt
+④ Then it calls the LLM again, sending everything so far
+⑤ This repeats until the reply contains no tool call
+⑥ Two loops: the harness loops over LLM calls, the LLM loops over tokens
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① The harness builds the prompt and calls the LLM | ① harness 拼好提示词，调用 LLM |
+| 3.4 s | ② Inside the call, the generation loop writes a tool call token by token | ② 在这次调用内部，生成循环逐个 token 写出一个工具调用 |
+| 5.6 s | ③ The harness runs the tool and adds the result to the prompt | ③ harness 运行工具，把结果加入提示词 |
+| 8.0 s | ④ Then it calls the LLM again, sending everything so far | ④ 然后再次调用 LLM，把到目前为止的全部内容发过去 |
+| 11.6 s | ⑤ This repeats until the reply contains no tool call | ⑤ 如此重复，直到回复里不再包含工具调用 |
+| 18.4 s | ⑥ Two loops: the harness loops over LLM calls, the LLM loops over tokens | ⑥ 两层循环：harness 在 LLM 调用上循环，LLM 在 token 上循环 |
+
+画面上的其他文字：
+
+```
+OUTER LOOP · run by the harness · 4 rounds here
+INNER LOOP · inside every call · one token per forward pass
+Agent = a program calling the LLM in a loop
+The LLM never changes and never acts. It only receives a longer prompt each time.
+```
+
+中文：外层循环，由 harness 执行，这里是 4 轮。内层循环，在每一次调用内部，每次前向传播一个 token。Agent = 一个在循环里调用 LLM 的程序。LLM 从不改变，也从不行动，它只是每次收到一个更长的提示词。
+
+## 04d · Agent Loop
+
+`04d_agent_loop.gif`
 
 **这一页底部没有说明文字。** 画面是靠左边的环、左下的伪代码和右边的上下文面板来讲的。
 
@@ -421,7 +519,10 @@ Two independent knobs, multiplied together
 | 02e_one_network_per_token | 5 |
 | 02f_new_token_adds_column | 6 |
 | 03_generation_loop | 6 |
-| 04_agent_loop | 0（底部无说明） |
+| 04a_one_big_prompt | 6 |
+| 04b_tool_call_is_text | 6 |
+| 04c_two_loops | 6 |
+| 04d_agent_loop | 0（底部无说明） |
 | 05_tool_calling | 6 |
 | 06_rag | 6 |
 | 07a_mcp_why | 2 |
@@ -431,4 +532,4 @@ Two independent knobs, multiplied together
 | 10a_model | 2 |
 | 10b_effort | 2 |
 | 10c_cost_formula | 1 |
-| **合计** | **72** |
+| **合计** | **90** |

@@ -8,6 +8,9 @@
 | `inside_transformer.py` | `02d_vectors_into_transformer.gif` |
 | `copies.py` | `02e_one_network_per_token.gif` |
 | `add_column.py` | `02f_new_token_adds_column.gif` |
+| `one_big_prompt.py` | `04a_one_big_prompt.gif` |
+| `tool_call_is_text.py` | `04b_tool_call_is_text.gif` |
+| `two_loops.py` | `04c_two_loops.gif` |
 | `note_02b.py` | 给 `02b_embedding_space.gif` 加右下角的说明框 |
 | `gifout.py` | 公用部分：标题、底部说明条、token 方块、GIF 输出 |
 
