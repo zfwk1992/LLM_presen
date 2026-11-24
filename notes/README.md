@@ -60,6 +60,8 @@
 
 动画总时长约 9 分 50 秒。
 
+[06d_embedding_model.md](06d_embedding_model.md) 是一篇没有对应 GIF 的补充笔记，讲 RAG 用的 embedding 模型有多大、内部结构、怎么训练出来的，以及有哪些现成的可以选。
+
 `07c` 用时序图把 MCP 的通信画细，`09b` 是第三章的收尾页，把 harness、LLM、内置工具、Skills、MCP 和 RAG 画在一张架构图里。两页都沿用 DCM 的例子。
 
 `06a` 到 `06c` 把 RAG 拆成三步细讲，用的是 DCM 例子里的那次规范检索。它们和 `06` 的总览内容重叠：只想点到为止放 `06`；想讲清楚放 `06a`–`06c`，可以不放 `06`。其中 `06b` 专门澄清了"RAG 的 embedding 模型"和"LLM 内部的 embedding 层"不是一回事。
