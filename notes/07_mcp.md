@@ -1,6 +1,6 @@
 # 07 · MCP（Model Context Protocol）
 
-这个主题有两页。
+这个主题有三页：07a 讲为什么，07b 讲三个步骤，07c 用时序图把通信过程画细。
 
 ![MCP why](../llm_agent_animations_single_page/07a_mcp_why.gif)
 
@@ -77,6 +77,55 @@ MCP 用的是 JSON-RPC 2.0。第 ③ 步画面上方显示的请求：
 ```
 
 不需要让听众记住格式，只需要让他们看到：这就是普通的请求和响应，没有什么神秘的东西。
+
+## 第三页：细节，谁和谁说话（07c，24.0 s）
+
+![MCP in detail](../llm_agent_animations_single_page/07c_mcp_in_detail.gif)
+
+这一页用时序图把 MCP 的通信过程画出来，沿用 DCM 例子里的规范检索：`search_spec` 这个工具由一个名叫 "spec" 的 MCP server 提供。
+
+四条竖线从左到右：
+
+| 参与者 | 是什么 |
+|---|---|
+| LLM | 只预测 token |
+| Harness (Claude Code) | 内部为每个 server 保留一个 MCP client |
+| MCP server "spec" | 一个小程序，可以在本机，也可以在远程 |
+| Spec index | server 背后用到的东西：embedding 模型加向量数据库 |
+
+竖线之间的三段通道各不相同：LLM 和 harness 之间是模型 API；harness 和 server 之间是 MCP（JSON-RPC 2.0，走 stdio 或 HTTP）；server 和它背后的系统之间是 server 自己的事。
+
+### 启动时（你还没输入任何东西）
+
+| 时间 | 字幕 | 消息 |
+|---|---|---|
+| 0.8 s | ① A config file tells the harness which MCP servers to start | 左下角的 `.mcp.json`：告诉 harness 有哪些 server、怎么启动 |
+| 3.4 s | ② At startup: initialize, then tools/list. The server describes its tools | harness → server：`initialize`；harness → server：`tools/list`；server → harness：工具的名称、说明和参数格式 |
+| 6.8 s | ③ That tool schema joins the tool definitions in every prompt | harness 把它记为 `mcp__spec__search_spec`，从此每次提示词的工具定义里都有它 |
+
+### 任务进行中（DCM 例子的第 3 次 LLM 调用）
+
+| 时间 | 字幕 | 消息 |
+|---|---|---|
+| 9.6 s | ④ During the task the LLM writes a tool call, exactly as for a built-in tool | harness → LLM：提示词（17.7k）；LLM → harness：`tool_use mcp__spec__search_spec { query: "Dcm integration PduR ComM" }` |
+| 12.6 s | ⑤ The harness sees the mcp__ prefix and forwards it as a JSON-RPC tools/call | harness 内部：看到前缀 `mcp__spec__`，知道该交给哪个 server，并检查权限；harness → server：`tools/call search_spec { query: … }` |
+| 15.6 s | ⑥ The server does the work (here: the RAG search) and returns text | server → 索引：把问题变成向量，比较；索引 → server：最接近的 3 段；server → harness：`result { content: [ { type: "text", text: … } ] }` |
+| 19.0 s | ⑦ The harness turns it into a tool_result. The LLM never talks to the server | harness → LLM：`tool_result`，3 段文字，出现在第 4 次调用的提示词里 |
+
+### 这一页要讲清楚的四件事
+
+- **LLM 从不直接和 MCP server 通信。** 看图：从 LLM 出发的箭头只到 harness 为止。它写出工具调用，剩下的由 harness 里的 MCP client 完成。
+- **对 LLM 来说，MCP 工具和内置工具没有区别。** 它写的都是 `tool_use`，只是名字带一个 `mcp__服务器名__` 的前缀。前面几页为了简洁写成 `search_spec`，完整的名字是 `mcp__spec__search_spec`。
+- **工具的"说明书"是启动时拿到的。** `tools/list` 返回的名称、说明和参数格式，会进入每一次提示词的工具定义部分。这就是 04a 里那块最大的橙色区域的来源之一，也是"连的 server 越多，固定开销越大"的原因。
+- **Server 内部做什么，harness 和 LLM 都不知道。** 这个例子里 server 做的是 RAG 检索（06a–06c 讲的那一套），但对外它只是"收到一个查询，返回一段文字"。换成查 Jira、查数据库，对外的形式完全一样。
+
+结尾的结论框：*The LLM writes a tool call. The harness's MCP client does the talking. The answer returns as text.*
+
+### 画面上的简化
+
+- **`.mcp.json` 的写法是简化的**，真实文件里这段在 `mcpServers` 之下，字段以官方文档为准。
+- **`initialize` 画成了一条消息**，实际是一来一回，之后还有一条确认通知。
+- **JSON 报文省略了 `jsonrpc`、`id` 等固定字段。**
 
 ## 需要真正搞懂的概念
 

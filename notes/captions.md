@@ -681,6 +681,62 @@ Transport: stdio (local process) or HTTP (remote server)
 | 7.0 s | ③ Call: the model picks a tool → tools/call → the result flows back | ③ 调用：模型选择工具 → tools/call → 结果返回 |
 | 13.1 s | Transport: stdio (local process) or HTTP (remote server) | 传输方式：stdio（本地进程）或 HTTP（远程服务器） |
 
+## 07c · MCP 细节：谁和谁说话
+
+`07c_mcp_in_detail.gif`
+
+```
+① A config file tells the harness which MCP servers to start
+② At startup: initialize, then tools/list. The server describes its tools
+③ That tool schema joins the tool definitions in every prompt
+④ During the task the LLM writes a tool call, exactly as for a built-in tool
+⑤ The harness sees the mcp__ prefix and forwards it as a JSON-RPC tools/call
+⑥ The server does the work (here: the RAG search) and returns text
+⑦ The harness turns it into a tool_result. The LLM never talks to the server
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① A config file tells the harness which MCP servers to start | ① 一个配置文件告诉 harness 要启动哪些 MCP server |
+| 3.4 s | ② At startup: initialize, then tools/list. The server describes its tools | ② 启动时：先 initialize，再 tools/list。server 描述它提供的工具 |
+| 6.8 s | ③ That tool schema joins the tool definitions in every prompt | ③ 这份工具说明加入每一次提示词的工具定义里 |
+| 9.6 s | ④ During the task the LLM writes a tool call, exactly as for a built-in tool | ④ 任务进行中，LLM 写出一个工具调用，和调用内置工具完全一样 |
+| 12.6 s | ⑤ The harness sees the mcp__ prefix and forwards it as a JSON-RPC tools/call | ⑤ harness 看到 mcp__ 前缀，把它转成一次 JSON-RPC 的 tools/call |
+| 15.6 s | ⑥ The server does the work (here: the RAG search) and returns text | ⑥ server 完成实际工作（这里是 RAG 检索）并返回文字 |
+| 19.0 s | ⑦ The harness turns it into a tool_result. The LLM never talks to the server | ⑦ harness 把它变成 tool_result。LLM 从不直接和 server 通信 |
+
+画面上的其他文字：
+
+```
+LLM: predicts tokens
+Harness (Claude Code): holds one MCP client per server
+MCP server "spec": a small program, local or remote
+Spec index: embedding model + vector DB
+the model API  |  MCP: JSON-RPC 2.0 over stdio or HTTP  |  whatever the server needs
+
+AT STARTUP · before you type anything
+  harness → server   initialize
+  harness → server   tools/list
+  server → harness   tools: [ search_spec + description + input schema ]
+  harness            kept as mcp__spec__search_spec → listed in every prompt
+
+DURING THE TASK · LLM call 3 of the DCM example
+  harness → LLM      the prompt · 17.7k tokens
+  LLM → harness      tool_use  mcp__spec__search_spec  { query: "Dcm integration PduR ComM" }
+  harness            prefix mcp__spec__ → that server · permission ok
+  harness → server   tools/call  search_spec  { query: "Dcm integration PduR ComM" }
+  server → index     embed the question, compare vectors
+  index → server     top 3 chunks
+  server → harness   result  content: [ { type: "text", text: "#412 … #413 … #414 …" } ]
+  harness → LLM      tool_result · 3 passages as text · in the prompt of call 4
+
+.mcp.json    "spec": { "command": "python", "args": ["spec_server.py"] }
+how the harness knows the server exists
+The LLM writes a tool call. The harness's MCP client does the talking. The answer returns as text.
+```
+
+中文（结论）：LLM 写出一个工具调用，harness 里的 MCP client 负责通信，答案以文字形式返回。
+
 ## 08 · Skills
 
 `08_skills.gif`
@@ -720,6 +776,59 @@ Goal: the smallest set of high-signal tokens for the task
 | 10.3 s | Compaction: summarise old turns, free the space | 压缩：总结旧的对话轮次，释放空间 |
 | 13.8 s | Sub-agents: explore in a separate context, return only the result | 子 Agent：在独立的上下文中探索，只返回结果 |
 | 19.4 s | Goal: the smallest set of high-signal tokens for the task | 目标：为任务提供数量最少、信息量最高的 token |
+
+## 09b · 整体架构：一切都经过 harness
+
+`09b_architecture.gif`
+
+```
+① The LLM talks to one thing only: the harness
+② At startup the harness collects what exists: tools, MCP servers, skills
+③ Call 1: the model asks for a skill; the harness reads it from disk
+④ Call 2: a built-in tool runs your script on your machine
+⑤ Call 3: an MCP server does the RAG search and returns text
+⑥ Every result comes back as text in the prompt, until the model answers
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① The LLM talks to one thing only: the harness | ① LLM 只和一样东西通信：harness |
+| 3.6 s | ② At startup the harness collects what exists: tools, MCP servers, skills | ② 启动时 harness 收集现有的能力：工具、MCP server、skill |
+| 7.0 s | ③ Call 1: the model asks for a skill; the harness reads it from disk | ③ 调用 1：模型要求一个 skill，harness 从磁盘读取它 |
+| 10.4 s | ④ Call 2: a built-in tool runs your script on your machine | ④ 调用 2：一个内置工具在你的机器上运行你的脚本 |
+| 13.4 s | ⑤ Call 3: an MCP server does the RAG search and returns text | ⑤ 调用 3：一个 MCP server 完成 RAG 检索并返回文字 |
+| 16.6 s | ⑥ Every result comes back as text in the prompt, until the model answers | ⑥ 每个结果都以文字形式回到提示词里，直到模型给出答案 |
+
+画面上的其他文字：
+
+```
+You: one request
+LLM: tokens in, tokens out          (the prompt ↑   one reply ↓)
+Harness (Claude Code): the only program the LLM is connected to
+  Prompt builder: joins all the parts      Agent loop: call, check, repeat
+  Permissions: may this run?               Tool router: who can do this?
+
+Built-in tools       Read · Grep · Bash · Edit           work on your project files
+Skills               folders on disk: SKILL.md + scripts  how to do a kind of task
+MCP server "spec"    embedding model + vector DB          this is where the RAG search runs
+MCP server "jira"    talks to the Jira API                connected, not needed this time
+Sub-agents           a second loop with its own context   not needed this time
+
+LLM call 1 asks for  Skill("dcm-integration")
+LLM call 2 asks for  Bash("extract_dcm_config.py …")
+LLM call 3 asks for  mcp__spec__search_spec("Dcm …")
+LLM call 4 asks for  Read("docs/architecture.md")
+(call 5, a Grep, works the same way)
+LLM call 6: no tool call · the integration plan → back to you
+
+THE PROMPT (what the LLM receives at each call)
+system · tool definitions (built-in + MCP) · CLAUDE.md · skills · your request     fixed part, the same at every call
++ SKILL.md · script output · 3 spec passages · architecture.md                     tool results, added one by one as text
+
+The LLM sees only the prompt. The harness is its only door to files, skills, MCP servers and RAG. Everything returns as text.
+```
+
+中文（结论）：LLM 只看得到提示词。harness 是它通往文件、skill、MCP server 和 RAG 的唯一通道。一切都以文字形式返回。
 
 ## 10a · /model
 
@@ -865,11 +974,13 @@ all counts are illustrative
 | 06c_rag_agent_uses_it | 6 |
 | 07a_mcp_why | 2 |
 | 07b_mcp_how | 4 |
+| 07c_mcp_in_detail | 7 |
 | 08_skills | 5 |
 | 09_context_engineering | 5 |
+| 09b_architecture | 6 |
 | 10a_model | 2 |
 | 10b_effort | 2 |
 | 10c_cost_formula | 1 |
 | 10d_same_task_models | 6 |
 | 10e_same_task_effort | 6 |
-| **合计** | **132** |
+| **合计** | **145** |

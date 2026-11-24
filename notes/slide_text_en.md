@@ -886,6 +886,63 @@ Every connected server adds its tool descriptions to every prompt.
 
 ---
 
+## 07c · MCP in detail: who talks to whom
+
+`07c_mcp_in_detail.gif`
+
+**Steps**
+
+```
+① A config file tells the harness which MCP servers to start
+② At startup: initialize, then tools/list. The server describes its tools
+③ That tool schema joins the tool definitions in every prompt
+④ During the task the LLM writes a tool call, exactly as for a built-in tool
+⑤ The harness sees the mcp__ prefix and forwards it as a JSON-RPC tools/call
+⑥ The server does the work (here: the RAG search) and returns text
+⑦ The harness turns it into a tool_result. The LLM never talks to the server
+```
+
+**Also on screen**
+
+```
+LLM: predicts tokens
+Harness (Claude Code): holds one MCP client per server
+MCP server "spec": a small program, local or remote
+Spec index: embedding model + vector DB
+the model API  |  MCP: JSON-RPC 2.0 over stdio or HTTP  |  whatever the server needs
+
+AT STARTUP · before you type anything
+  harness → server   initialize
+  harness → server   tools/list
+  server → harness   tools: [ search_spec + description + input schema ]
+  harness            kept as mcp__spec__search_spec → listed in every prompt
+
+DURING THE TASK · LLM call 3 of the DCM example
+  harness → LLM      the prompt · 17.7k tokens
+  LLM → harness      tool_use  mcp__spec__search_spec  { query: "Dcm integration PduR ComM" }
+  harness            prefix mcp__spec__ → that server · permission ok
+  harness → server   tools/call  search_spec  { query: "Dcm integration PduR ComM" }
+  server → index     embed the question, compare vectors
+  index → server     top 3 chunks
+  server → harness   result  content: [ { type: "text", text: "#412 … #413 … #414 …" } ]
+  harness → LLM      tool_result · 3 passages as text · in the prompt of call 4
+
+.mcp.json    "spec": { "command": "python", "args": ["spec_server.py"] }
+how the harness knows the server exists
+The LLM writes a tool call. The harness's MCP client does the talking. The answer returns as text.
+```
+
+**Extra**
+
+```
+The LLM never talks to an MCP server. All its arrows end at the harness.
+To the model an MCP tool looks exactly like a built-in tool. Only the name has a prefix.
+The tool descriptions are fetched once at startup and then sent with every prompt.
+What the server does inside is its own business. From outside it is: a query in, text out.
+```
+
+---
+
 ## 08 · Skills
 
 `08_skills.gif`
@@ -954,6 +1011,61 @@ Persist    notes & CLAUDE.md live outside the window
 The context window is a workbench, not a warehouse.
 Tool results, not the conversation, are usually what fills it.
 Every extra token is re-read on every step of the agent loop.
+```
+
+---
+
+## 09b · The whole picture: everything goes through the harness
+
+`09b_architecture.gif`
+
+**Steps**
+
+```
+① The LLM talks to one thing only: the harness
+② At startup the harness collects what exists: tools, MCP servers, skills
+③ Call 1: the model asks for a skill; the harness reads it from disk
+④ Call 2: a built-in tool runs your script on your machine
+⑤ Call 3: an MCP server does the RAG search and returns text
+⑥ Every result comes back as text in the prompt, until the model answers
+```
+
+**Also on screen**
+
+```
+You: one request
+LLM: tokens in, tokens out          (the prompt ↑   one reply ↓)
+Harness (Claude Code): the only program the LLM is connected to
+  Prompt builder: joins all the parts      Agent loop: call, check, repeat
+  Permissions: may this run?               Tool router: who can do this?
+
+Built-in tools       Read · Grep · Bash · Edit           work on your project files
+Skills               folders on disk: SKILL.md + scripts  how to do a kind of task
+MCP server "spec"    embedding model + vector DB          this is where the RAG search runs
+MCP server "jira"    talks to the Jira API                connected, not needed this time
+Sub-agents           a second loop with its own context   not needed this time
+
+LLM call 1 asks for  Skill("dcm-integration")
+LLM call 2 asks for  Bash("extract_dcm_config.py …")
+LLM call 3 asks for  mcp__spec__search_spec("Dcm …")
+LLM call 4 asks for  Read("docs/architecture.md")
+(call 5, a Grep, works the same way)
+LLM call 6: no tool call · the integration plan → back to you
+
+THE PROMPT (what the LLM receives at each call)
+system · tool definitions (built-in + MCP) · CLAUDE.md · skills · your request     fixed part, the same at every call
++ SKILL.md · script output · 3 spec passages · architecture.md                     tool results, added one by one as text
+
+The LLM sees only the prompt. The harness is its only door to files, skills, MCP servers and RAG. Everything returns as text.
+```
+
+**Extra**
+
+```
+The LLM has exactly one connection: the harness. It cannot read files, reach the network or see a database.
+Reading a file, loading a skill and calling an MCP server all look the same to the model: a tool call out, text back.
+MCP is a way to connect. RAG is a way to fetch knowledge. Here the RAG search is offered through an MCP server.
+The model decides what it needs. The harness fetches it and puts the result into the prompt as text.
 ```
 
 ---

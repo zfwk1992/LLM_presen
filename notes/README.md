@@ -1,6 +1,6 @@
 # LLM 与 AI Agent 演讲 · 学习笔记
 
-这套笔记和 [../llm_agent_animations_single_page/](../llm_agent_animations_single_page/) 里的 28 个 GIF 一一对应。每篇笔记讲清楚一页动画：画面每一步在演示什么、背后的概念、容易讲错的地方、听众可能问什么。
+这套笔记和 [../llm_agent_animations_single_page/](../llm_agent_animations_single_page/) 里的 30 个 GIF 一一对应。每篇笔记讲清楚一页动画：画面每一步在演示什么、背后的概念、容易讲错的地方、听众可能问什么。
 
 ## 整体故事线
 
@@ -44,19 +44,23 @@
 | 19 | `06c_rag_agent_uses_it.gif` | 23.0 s | [06abc_rag_in_detail.md](06abc_rag_in_detail.md) | RAG 细节 3/3：工具调用 → 向量比较 → 返回原文 |
 | 20 | `07a_mcp_why.gif` | 6.7 s | [07_mcp.md](07_mcp.md) | M×N 个集成变成 M+N 个 |
 | 21 | `07b_mcp_how.gif` | 16.1 s | [07_mcp.md](07_mcp.md) | 连接、发现、调用三步 |
-| 22 | `08_skills.gif` | 19.4 s | [08_skills.md](08_skills.md) | 三级按需加载，装很多也不占上下文 |
-| 23 | `09_context_engineering.gif` | 23.4 s | [09_context_engineering.md](09_context_engineering.md) | 上下文是有限资源，要管理 |
-| 24 | `10a_model.gif` | 10.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 模型 = 用哪套权重 |
-| 25 | `10b_effort.gif` | 10.6 s | [10_model_vs_effort.md](10_model_vs_effort.md) | Effort = 同一个模型干多少活 |
-| 26 | `10c_cost_formula.gif` | 5.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 两个旋钮相乘 |
-| 27 | `10d_same_task_models.gif` | 22.5 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 同一个 DCM 请求换三个模型：速度、单价、判断质量不同 |
-| 28 | `10e_same_task_effort.gif` | 23.0 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 同一个 DCM 请求换四档 effort：轮数和思考量不同 |
+| 22 | `07c_mcp_in_detail.gif` | 24.0 s | [07_mcp.md](07_mcp.md) | 时序图：启动时取工具说明，任务中 harness 转发调用，LLM 不直接连 server |
+| 23 | `08_skills.gif` | 19.4 s | [08_skills.md](08_skills.md) | 三级按需加载，装很多也不占上下文 |
+| 24 | `09_context_engineering.gif` | 23.4 s | [09_context_engineering.md](09_context_engineering.md) | 上下文是有限资源，要管理 |
+| 25 | `09b_architecture.gif` | 24.5 s | [09b_architecture.md](09b_architecture.md) | 第三章收尾：整体架构，一切都经过 harness |
+| 26 | `10a_model.gif` | 10.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 模型 = 用哪套权重 |
+| 27 | `10b_effort.gif` | 10.6 s | [10_model_vs_effort.md](10_model_vs_effort.md) | Effort = 同一个模型干多少活 |
+| 28 | `10c_cost_formula.gif` | 5.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 两个旋钮相乘 |
+| 29 | `10d_same_task_models.gif` | 22.5 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 同一个 DCM 请求换三个模型：速度、单价、判断质量不同 |
+| 30 | `10e_same_task_effort.gif` | 23.0 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 同一个 DCM 请求换四档 effort：轮数和思考量不同 |
 
 另有 [glossary.md](glossary.md)：中英文术语对照，备查；[captions.md](captions.md)：每页动画底部说明文字的原文和翻译，可直接贴到 PPT。
 
 `02c` 到 `02f`、`04a` 到 `04e` 是后来新增的九页，`02b` 末尾加了一个说明框，原始循环版文件夹里没有这些内容。原来的 `04_agent_loop.gif` 改名为 `04f_agent_loop.gif`，内容没变。生成脚本在 [../tools/anim/](../tools/anim/)，以后要改文字或节奏可以直接改脚本重新生成。
 
-动画总时长约 9 分钟。
+动画总时长约 9 分 50 秒。
+
+`07c` 用时序图把 MCP 的通信画细，`09b` 是第三章的收尾页，把 harness、LLM、内置工具、Skills、MCP 和 RAG 画在一张架构图里。两页都沿用 DCM 的例子。
 
 `06a` 到 `06c` 把 RAG 拆成三步细讲，用的是 DCM 例子里的那次规范检索。它们和 `06` 的总览内容重叠：只想点到为止放 `06`；想讲清楚放 `06a`–`06c`，可以不放 `06`。其中 `06b` 专门澄清了"RAG 的 embedding 模型"和"LLM 内部的 embedding 层"不是一回事。
 
