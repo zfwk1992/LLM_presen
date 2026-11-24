@@ -14,11 +14,11 @@ SCORES = [("·bus", 58), ("·frame", 21), ("·message", 12), ("·signal", 6)]
 CAPS = [
     (0.8, 1, "The input is a list of tokens; each token has an ID"),
     (3.6, 2, "Each ID is looked up: n tokens become n vectors"),
-    (6.4, 3, "All n vectors enter the network together, nothing is compared first"),
+    (6.4, 3, "All n vectors go in together: one forward pass, not token by token"),
     (9.2, 4, "Each output vector predicts the token after it: only the last is new"),
     (11.8, 5, "That one vector is matched against every token: one score each"),
     (14.6, 6, "One token is picked and appended to the input"),
-    (17.8, 7, "Next round: n + 1 vectors go in. That is the generation loop"),
+    (17.8, 7, "Next round: n + 1 vectors, one more forward pass. That is the loop"),
 ]
 
 
@@ -67,10 +67,17 @@ def render(t):
     if 0 < sweep < 1:
         x = BX0 + 8 + (BX1 - BX0 - 46) * sweep
         f.rrect((x, 174, x + 30, by1 - 8), 8, fill=PURPLE_HI, a=tb * (1 - abs(sweep - 0.5) * 1.2))
+    # which forward pass this is: the whole input goes through once per generated token
+    second = ease((t - 19.2) / 0.4)
+    bcx = (BX0 + BX1) / 2
+    f.rrect((bcx - 62, 184, bcx + 62, 208), 12, fill=PURPLE, a=tb)
+    f.text((bcx, 196), "forward pass #1", inter(11.5, 700), (255, 255, 255), tb * (1 - second), "mm")
+    f.text((bcx, 196), "forward pass #2", inter(11.5, 700), (255, 255, 255), tb * second, "mm")
+    f.text((bcx, 226), "whole input at once", inter(11, 500), PURPLE, tb, "mm")
     f.text(((BX0 + BX1) / 2, 262), "N layers", inter(14, 700), PURPLE, tb, "mm")
     f.text(((BX0 + BX1) / 2, 283), "attention + MLP", inter(12, 500), PURPLE, tb, "mm")
     note = v(7.0)
-    f.text((433, 128), "straight in", inter(11.5, 700), ORANGE, note, "mm")
+    f.text((433, 128), "all together, straight in", inter(11.5, 700), ORANGE, note, "mm")
     f.line((433, 137), (433, 172), ORANGE, 0.55 * note, 1)
 
     # ---- rows
@@ -153,9 +160,10 @@ def render(t):
 
     # ---- conclusion
     c7 = v(21.0)
-    f.rrect((372, 560, 908, 598), 9, fill=DARK, a=c7)
-    f.text((640, 579), "Vectors in  →  probabilities out  →  one token  →  repeat", inter(14, 600), (255, 255, 255), c7, "mm")
-    f.text((640, 618), "Cosine similarity is not a step on this path: it only describes the vector space.", inter(12, 400), GREY, v(21.5), "mm")
+    f.rrect((372, 532, 908, 570), 9, fill=DARK, a=c7)
+    f.text((640, 551), "Vectors in  →  probabilities out  →  one token  →  repeat", inter(14, 600), (255, 255, 255), c7, "mm")
+    f.text((640, 592), "One forward pass per generated token. The prompt goes in all at once, not token by token.", inter(12, 600), INK, v(21.4), "mm")
+    f.text((640, 613), "Cosine similarity is not a step on this path: it only describes the vector space.", inter(12, 400), GREY, v(21.8), "mm")
 
     # ---- caption pill
     for k, (st, num, txt) in enumerate(CAPS):

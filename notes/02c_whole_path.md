@@ -12,7 +12,7 @@
 
 **不用。相似度不是这条路径上的任何一步。**
 
-向量查出来之后直接送进网络，中间没有比较、没有筛选、没有任何计算。画面上 "vectors" 和 "Transformer" 之间那个橙色的标注 **straight in** 说的就是这件事。
+向量查出来之后直接送进网络，中间没有比较、没有筛选、没有任何计算。画面上 "vectors" 和 "Transformer" 之间那个橙色的标注 **all together, straight in** 说的就是这件事。
 
 02b 那一页展示的余弦相似度，是在**描述**这些向量的一个性质（意思相近的词，向量方向相近），好比在解释"为什么用向量来表示词是合理的"。它是一个旁白，不是流程。02b 的画面右下角现在加了一个橙色的说明框 "Not a step in the pipeline"，就是为了避免这个误会。
 
@@ -71,6 +71,37 @@
 
 还有一点容易忽略：这个"相近"不是人规定的，也不是训练的目标。训练的目标只有"预测下一个 token"，相近是为了达到这个目标自然形成的结果。
 
+### 6. 我的提示词是一个 token 一个 token 喂进去的吗？
+
+**不是。提示词的所有 token 是一次性、同时进入网络的。**
+
+写了一段 1000 个 token 的提示词，过程是这样：
+
+1. 1000 个 token 全部查表，得到 1000 个向量。
+2. 这 1000 个向量**一起**进入网络，做**一次**前向传播（forward pass）。
+3. 取最后一个位置的输出向量，得到第 1001 个 token 的概率，选出一个。
+4. 把这个新 token 接到末尾，再做**一次**前向传播，得到第 1002 个。
+5. 如此重复。
+
+所以前向传播的次数取决于**生成了多少个 token**，和提示词有多长无关：
+
+| 情况 | 前向传播次数 |
+|---|---|
+| 提示词 1000 个 token，回答 200 个 token | 约 200 次 |
+| 提示词 10 个 token，回答 200 个 token | 约 200 次 |
+| 提示词 1000 个 token，回答 1 个 token | 1 次 |
+
+提示词变长，不会增加次数，但会让**每一次**的计算量变大（要处理的向量更多）。
+
+这解释了两个日常现象：
+
+- **读得快，写得慢。** 模型"读"完很长的提示词只需要一次前向传播，各个位置是并行计算的；而"写"每个 token 都要单独一次。
+- **输出比输入贵。** 各家的定价里，输出 token 的单价都比输入 token 高，原因就在这里。
+
+画面上，Transformer 的框里现在有一个紫色标签：第一轮是 **forward pass #1**，`·bus` 接回输入后变成 **forward pass #2**，下面一行写着 *whole input at once*。
+
+一个实现细节，被问到时知道即可：第二次前向传播时，前 5 个 token 在各层的中间结果和第一次完全一样，所以实际系统会把它们缓存下来复用，只新算第 6 个 token 的部分。概念上仍然是"整个输入再过一遍网络"，只是不做重复劳动。
+
 ## 用具体数字走一遍
 
 输入是 `The ECU reads the CAN`，画面从左到右：
@@ -95,12 +126,12 @@
 |---|---|---|---|
 | 0.8 s | ① The input is a list of tokens; each token has an ID | 5 个 token 竖着排开，各自指向一个整数 | "回顾第一页：输入就是 5 个 token，各有一个编号" |
 | 3.6 s | ② Each ID is looked up: n tokens become n vectors | 每个整数右边出现一条向量 | "每个编号查表得到一个向量。5 个 token，5 个向量" |
-| 6.4 s | ③ All n vectors enter the network together, nothing is compared first | Transformer 的框出现，5 个箭头一起进入；上方出现 "straight in" | **停一下**："5 个一起进去。进去之前什么都不比较" |
+| 6.4 s | ③ All n vectors go in together: one forward pass, not token by token | Transformer 的框出现，5 个箭头一起进入；框里标着 "forward pass #1 · whole input at once"，上方是 "all together, straight in" | **停一下**："5 个一起进去，只算一次。不是一个一个喂，进去之前也不做任何比较" |
 | 9.2 s | ④ Each output vector predicts the token after it: only the last is new | 右边出来 5 条向量，前 4 条变淡，最后一条被橙色框出 | "出来还是 5 个。每个都在预测它后面的词，前 4 个预测的我们已经知道了，只有最后一个是新的" |
 | 11.8 s | ⑤ That one vector is matched against every token: one score each | 橙色箭头指向右边的面板；每行是一个候选 token、它自己的向量、匹配出的概率 | "这一个向量不是 token。拿它和词表里每个 token 的向量各比一次，每个 token 得到一个分数" |
 | 14.6 s | ⑥ One token is picked and appended to the input | `·bus` 那一行高亮，右边出现橙色的 `·bus`，虚线绕回最左边 | "选中 bus，把它接回输入的末尾" |
-| 17.8 s | ⑦ Next round: n + 1 vectors go in. That is the generation loop | 左边多出第 6 行，Transformer 的框变高，橙色框移到第 6 条输出向量 | "现在是 6 个向量进去。这就是生成循环" |
-| 约 21 s | — | 深色框：Vectors in → probabilities out → one token → repeat；下面一行小字说明余弦相似度不在这条路径上 | 收尾 |
+| 17.8 s | ⑦ Next round: n + 1 vectors, one more forward pass. That is the loop | 左边多出第 6 行，Transformer 的框变高，标签变成 "forward pass #2"，橙色框移到第 6 条输出向量 | "现在是 6 个向量进去，再算一次。这就是生成循环" |
+| 约 21 s | — | 深色框：Vectors in → probabilities out → one token → repeat；下面两行：每生成一个 token 一次前向传播，提示词是一次性进去的；余弦相似度不在这条路径上 | 收尾 |
 
 ## 这一页和前后几页的关系
 

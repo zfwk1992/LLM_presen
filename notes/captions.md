@@ -70,31 +70,32 @@ The vectors go straight into the network.
 ```
 ① The input is a list of tokens; each token has an ID
 ② Each ID is looked up: n tokens become n vectors
-③ All n vectors enter the network together, nothing is compared first
+③ All n vectors go in together: one forward pass, not token by token
 ④ Each output vector predicts the token after it: only the last is new
 ⑤ That one vector is matched against every token: one score each
 ⑥ One token is picked and appended to the input
-⑦ Next round: n + 1 vectors go in. That is the generation loop
+⑦ Next round: n + 1 vectors, one more forward pass. That is the loop
 ```
 
 | 出现时间 | 英文原文 | 中文 |
 |---|---|---|
 | 0.8 s | ① The input is a list of tokens; each token has an ID | ① 输入是一串 token，每个 token 有一个 ID |
 | 3.6 s | ② Each ID is looked up: n tokens become n vectors | ② 每个 ID 查表：n 个 token 变成 n 个向量 |
-| 6.4 s | ③ All n vectors enter the network together, nothing is compared first | ③ n 个向量一起进入网络，之前不做任何比较 |
+| 6.4 s | ③ All n vectors go in together: one forward pass, not token by token | ③ n 个向量一起进入：一次前向传播，不是逐个 token 进入 |
 | 9.2 s | ④ Each output vector predicts the token after it: only the last is new | ④ 每个输出向量预测的是它后面的那个 token：只有最后一个是新的 |
 | 11.8 s | ⑤ That one vector is matched against every token: one score each | ⑤ 这一个向量与每个 token 逐一匹配：每个 token 得到一个分数 |
 | 14.6 s | ⑥ One token is picked and appended to the input | ⑥ 选出一个 token，追加到输入末尾 |
-| 17.8 s | ⑦ Next round: n + 1 vectors go in. That is the generation loop | ⑦ 下一轮：n + 1 个向量进入。这就是生成循环 |
+| 17.8 s | ⑦ Next round: n + 1 vectors, one more forward pass. That is the loop | ⑦ 下一轮：n + 1 个向量，再做一次前向传播。这就是循环 |
 
-这一页最后在画面下方还有一个深色框和一行小字：
+这一页最后在画面下方还有一个深色框和两行文字：
 
 ```
 Vectors in → probabilities out → one token → repeat
+One forward pass per generated token. The prompt goes in all at once, not token by token.
 Cosine similarity is not a step on this path: it only describes the vector space.
 ```
 
-中文：向量进 → 概率出 → 一个 token → 重复。余弦相似度不是这条路径上的一步，它只是在描述向量空间。
+中文：向量进 → 概率出 → 一个 token → 重复。每生成一个 token 做一次前向传播；提示词是一次性全部进入的，不是逐个 token 进入。余弦相似度不是这条路径上的一步，它只是在描述向量空间。
 
 ## 02d · 向量进入 Transformer
 
