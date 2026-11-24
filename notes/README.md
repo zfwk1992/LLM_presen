@@ -1,0 +1,83 @@
+# LLM 与 AI Agent 演讲 · 学习笔记
+
+这套笔记和 [../llm_agent_animations_single_page/](../llm_agent_animations_single_page/) 里的 14 个 GIF 一一对应。每篇笔记讲清楚一页动画：画面每一步在演示什么、背后的概念、容易讲错的地方、听众可能问什么。
+
+## 整体故事线
+
+整场演讲只有一条主线：**LLM 只会做一件事——根据已有的 token 预测下一个 token。后面所有的能力，都是在"往上下文里放什么"上做文章。**
+
+| 章节 | 回答的问题 | 页面 |
+|---|---|---|
+| LLM Fundamentals | 模型本身到底在做什么？ | 01 → 02a → 02b → 03 |
+| From LLM to AI Agent | 只会写字的模型怎么"做事"？ | 04 → 05 |
+| Extending Capabilities | 怎么让它知道更多、连上更多系统、又不被信息淹没？ | 06 → 07a → 07b → 08 → 09 |
+| Claude Code | 用的时候有哪两个旋钮？ | 10a → 10b → 10c |
+
+每一章都建立在上一章之上，讲的时候可以反复回扣这三句话：
+
+1. 模型看到的只有 **token**（01、02）。
+2. 模型做的只有 **预测下一个 token，然后循环**（03）。
+3. Agent、工具、RAG、MCP、Skills 都是在决定 **哪些 token 进入上下文**（04–09），模型选择和 effort 决定 **这个循环跑多贵、跑多久**（10）。
+
+## 页面与笔记对照
+
+| # | GIF | 时长 | 笔记 | 一句话 |
+|---|---|---|---|---|
+| 1 | `01_tokenization.gif` | 15.4 s | [01_tokenization.md](01_tokenization.md) | 文本先被切成 token，再变成整数 ID |
+| 2 | `02a_embedding_lookup.gif` | 8.0 s | [02_embedding.md](02_embedding.md) | 每个 ID 查表得到一个向量 |
+| 3 | `02b_embedding_space.gif` | 8.8 s | [02_embedding.md](02_embedding.md) | 意思相近的向量方向相近 |
+| 4 | `03_generation_loop.gif` | 23.4 s | [03_generation_loop.md](03_generation_loop.md) | 一次只生成一个 token，然后重复 |
+| 5 | `04_agent_loop.gif` | 21.4 s | [04_agent_loop.md](04_agent_loop.md) | Agent = LLM + 工具 + 循环 |
+| 6 | `05_tool_calling.gif` | 21.4 s | [05_tool_calling.md](05_tool_calling.md) | 模型只写结构化文本，执行的是 harness |
+| 7 | `06_rag.gif` | 21.4 s | [06_rag.md](06_rag.md) | 先检索，再把检索结果放进 prompt |
+| 8 | `07a_mcp_why.gif` | 6.7 s | [07_mcp.md](07_mcp.md) | M×N 个集成变成 M+N 个 |
+| 9 | `07b_mcp_how.gif` | 16.1 s | [07_mcp.md](07_mcp.md) | 连接、发现、调用三步 |
+| 10 | `08_skills.gif` | 19.4 s | [08_skills.md](08_skills.md) | 三级按需加载，装很多也不占上下文 |
+| 11 | `09_context_engineering.gif` | 23.4 s | [09_context_engineering.md](09_context_engineering.md) | 上下文是有限资源，要管理 |
+| 12 | `10a_model.gif` | 10.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 模型 = 用哪套权重 |
+| 13 | `10b_effort.gif` | 10.6 s | [10_model_vs_effort.md](10_model_vs_effort.md) | Effort = 同一个模型干多少活 |
+| 14 | `10c_cost_formula.gif` | 5.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 两个旋钮相乘 |
+
+另有 [glossary.md](glossary.md)：中英文术语对照，备查。
+
+动画总时长约 3 分 34 秒。如果每页在动画之外再讲 1–2 分钟，全场大约 20–30 分钟；这只是按页数估的，请按你实际拿到的时间调整。
+
+## 建议的学习顺序
+
+1. 先按顺序把 01–03 读透。后面所有内容都依赖"token → 向量 → 预测下一个 token"这三步，这里不牢，后面讲起来会虚。
+2. 再读 04、05。重点是分清 **模型** 和 **harness** 各自负责什么。
+3. 06–09 可以当成同一个问题的四种答案来读：怎样把正确的信息在正确的时刻放进上下文。
+4. 最后读 10，把成本和速度联系回 03 的循环。
+5. 每篇末尾有自测题，合上笔记能答出来再往下。
+
+## 放映注意事项
+
+- **GIF 只播一遍**，播完停在完整画面上。翻到这一页时动画自动开始，所以先翻页、再开口。
+- **翻回上一页会重播**。如果只是想回看某个画面，等它播完再讲。
+- **编辑视图里这些页是空白的**（GIF 第一帧是白底），放映时正常。导出 PDF 发给别人时这些页也是空白，需要另外截最后一帧。
+- **节奏由动画定**。每篇笔记里有时间轴表格，排练时对着表格练，确认你说的话和画面出现的内容同步。
+
+## 讲的时候要主动说明的简化
+
+这些地方动画为了清晰做了简化，如果听众里有熟悉细节的人，主动说一句比被问到更好：
+
+| 页面 | 简化之处 | 一句话说明 |
+|---|---|---|
+| 01 | token ID 是编的 | "数字只是示意，不同模型的词表不一样" |
+| 02b | 画成二维 | "真实是几千维，这里投影到二维方便看" |
+| 03 | 只列了 4 个候选 | "实际是对词表里每一个 token 都给出概率" |
+| 05 | `tool_use` 没有 `id` | "真实 API 里调用和结果靠 id 配对" |
+| 07b | 工具名写成 `jira.get_issue` | "Claude Code 里显示为 `mcp__jira__get_issue`" |
+| 10a | 神经网络画成全连接层 | "只是表示大小不同，真实结构是 Transformer" |
+| 10a | Opus 标注 "most capable" | 目前产品线里 Opus 之上还有 Fable，见 [10 的笔记](10_model_vs_effort.md) |
+| 10b | ≈1× 到 ≈5× | "倍数是示意，不是实测" |
+
+## 排练清单
+
+- [ ] 每一页能不看笔记说出"这一页的一句话"
+- [ ] 01–03 的三个自测题全部答对
+- [ ] 能说清模型和 harness 的分工（05）
+- [ ] 能说清 MCP 和 Skills 的区别（08）
+- [ ] 能用 03 的循环解释为什么大模型更慢、高 effort 更贵（10）
+- [ ] 在 PowerPoint 里完整放映过一遍，确认每个 GIF 都停在最后一帧
+- [ ] 计时：全程用时是否在限定时间内
