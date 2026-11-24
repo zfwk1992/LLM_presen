@@ -16,6 +16,17 @@ YELLOW, YELLOW_F = (202, 138, 4), (253, 243, 215)
 SLATE, SLATE_F = (107, 114, 128), (229, 231, 235)
 
 
+REQUEST = "How do we integrate DCM into this project?"
+SKILL = "dcm-integration"
+
+
+def example_header(f, title, part):
+    """Header for the five pages that follow one request through the agent."""
+    header(f, title, f"FROM LLM TO AI AGENT  ·  ONE EXAMPLE, PART {part} OF 5", PURPLE)
+    a0 = f.v(0.1, 0.5)
+    f.text((1232, 45), "the request:  “" + REQUEST + "”", inter(12, 600), BLUE, a0, "rm")
+
+
 def header(f, title, tag="LLM FUNDAMENTALS", col=BLUE):
     a0 = f.v(0.1, 0.5)
     f.spaced((56, 45), tag, inter(12, 700), col, a0, 1.7)

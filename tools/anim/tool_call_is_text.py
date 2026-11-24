@@ -1,12 +1,12 @@
-"""04b: inside one LLM call. The reply is generated token by token; a tool call is just text the harness then acts on."""
+﻿"""04b: inside one LLM call. The reply is generated token by token; a tool call is just text the harness then acts on."""
 from PIL import Image
 from inside_transformer import (Frame, inter, mono, ease, clamp, INK, GREY, LIGHT, BLUE, PURPLE, PURPLE_F, PURPLE_B,
                                 PURPLE_HI, ORANGE, ORANGE_F, PANEL, PANEL_B, DARK, W, H, S)
-from gifout import header, captions, main, mix, GREEN, GREEN_F, TEAL, TEAL_F, SLATE, SLATE_F
+from gifout import example_header, SKILL, header, captions, main, mix, GREEN, GREEN_F, TEAL, TEAL_F, SLATE, SLATE_F
 
 END = 24.0
 TOKS = ['{"', 'type', '":', ' "', 'tool', '_use', '",', ' "', 'name', '":', ' "', 'Skill', '",',
-        ' "', 'input', '":', ' {"', 'skill', '":', ' "', 'dcm', '-guide', '"}}', '<end>']
+        ' "', 'input', '":', ' {"', 'skill', '":', ' "', 'dcm', '-integration', '"}}', '<end>']
 T0, DT = 3.6, 0.3                      # first token, interval
 T_DONE = T0 + DT * len(TOKS)           # 10.8
 CAPS = [
@@ -22,7 +22,7 @@ CAPS = [
 def render(t):
     f = Frame(t)
     v = f.v
-    header(f, "A Tool Call Is Just Generated Text", "FROM LLM TO AI AGENT", PURPLE)
+    example_header(f, "Call 1: What the LLM Returns", 2)
 
     # ---- the prompt (same strip as the previous page), growing at the end
     pa = v(0.9)
@@ -38,7 +38,7 @@ def render(t):
     y += 6 * add_out
     f.rrect((56, y, 150, y + 50 * add_res), 3, fill=GREEN_F, outline=GREEN, a=pa * add_res, width=1.2)
     y += 50 * add_res
-    for a, s in ((1 - add_out, "14,709 tokens"), (add_out * (1 - add_res), "14,733 tokens"), (add_res, "16,833 tokens")):
+    for a, s in ((1 - add_out, "14,710 tokens"), (add_out * (1 - add_res), "14,734 tokens"), (add_res, "16,834 tokens")):
         f.text((103, y + 16), s, mono(11), GREY, pa * a, "mm")
     f.text((160, 148), "system", inter(10.5, 500), LIGHT, pa)
     f.text((160, 300), "tools", inter(10.5, 500), LIGHT, pa)
@@ -89,7 +89,7 @@ def render(t):
     r = v(8.4)
     f.rrect((490, 478, 890, 536), 9, fill=ORANGE_F, outline=ORANGE, a=r, width=1.3)
     f.text((506, 497), "Read as text, it says:", inter(11.5, 500), GREY, r)
-    f.text((506, 518), 'use the tool "Skill" with skill = "dcm-guide"', inter(13, 700), ORANGE, r)
+    f.text((506, 518), 'use the tool "Skill" with skill = "dcm-integration"', inter(13, 700), ORANGE, r)
     st = v(11.4)
     f.text((690, 556), "24 tokens, 24 forward passes. Then the LLM is finished.", inter(12, 600), INK, st, "mm")
     f.text((690, 575), "No file was read. No command was run.", inter(12, 400), GREY, st, "mm")
@@ -106,7 +106,7 @@ def render(t):
     f.arrow((1086, 308), (1086, 342), TEAL, 1, 1.8, prog=v(15.7, 0.3))
     f.rrect((940, 346, 1232, 420), 12, fill=GREEN_F, outline=GREEN, a=ta, width=1.8)
     f.text((958, 370), "Tool: Skill", inter(15, 700), GREEN, ta)
-    f.text((958, 394), "reads dcm-guide/SKILL.md from your disk", inter(11.5, 400), INK, ta)
+    f.text((958, 394), "reads " + SKILL + "/SKILL.md from your disk", inter(11.5, 400), INK, ta)
     ra = v(17.0)
     f.arrow((1086, 424), (1086, 458), GREEN, 1, 1.8, prog=v(16.9, 0.3))
     f.rrect((940, 462, 1232, 520), 10, fill=(255, 255, 255), outline=GREEN, a=ra, width=1.5)

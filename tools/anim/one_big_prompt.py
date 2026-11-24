@@ -1,8 +1,8 @@
-"""04a: what the LLM actually receives. You type one line; the harness assembles one long token sequence."""
+﻿"""04a: what the LLM actually receives. You type one line; the harness assembles one long token sequence."""
 from PIL import Image
 from inside_transformer import (Frame, inter, mono, ease, clamp, INK, GREY, LIGHT, BLUE, BLUE_F, PURPLE, PURPLE_F,
                                 PURPLE_B, PURPLE_HI, ORANGE, ORANGE_F, PANEL, PANEL_B, DARK, W, H)
-from gifout import header, chip, captions, main, mix, GREEN, GREEN_F, TEAL, TEAL_F, YELLOW, YELLOW_F, SLATE, SLATE_F
+from gifout import example_header, REQUEST, SKILL, header, chip, captions, main, mix, GREEN, GREEN_F, TEAL, TEAL_F, YELLOW, YELLOW_F, SLATE, SLATE_F
 
 END = 22.5
 # name, where it comes from, tokens (illustrative), colours
@@ -10,15 +10,15 @@ PARTS = [
     ("System prompt", "written by Claude Code: how to behave", 3200, SLATE, SLATE_F),
     ("Tool definitions", "Read, Grep, Bash, Edit, Skill, MCP tools …", 9500, ORANGE, ORANGE_F),
     ("CLAUDE.md", "your project notes, loaded every session", 1400, TEAL, TEAL_F),
-    ("Skill list", "one line per skill, e.g. dcm-guide", 600, GREEN, GREEN_F),
-    ("Your message", "“Investigate how DCM works”", 9, BLUE, BLUE_F),
+    ("Skill list", "one line per skill, e.g. " + SKILL, 600, GREEN, GREEN_F),
+    ("Your message", "“" + REQUEST + "”", 10, BLUE, BLUE_F),
 ]
 TOTAL = sum(p[2] for p in PARTS)
 CARD_Y = [124, 190, 256, 322, 420]
 SX0, SX1, SY0, SY1 = 470, 640, 124, 524
 seg, y = [], SY0
 for name, _, n, _, _ in PARTS:
-    h = max(4.0, (SY1 - SY0 - 4) * n / (TOTAL - 9)) if n > 9 else 4.0
+    h = max(4.0, (SY1 - SY0 - 4) * n / (TOTAL - 10)) if n > 10 else 4.0
     seg.append((y, y + h)); y += h
 CAPS = [
     (0.8, 1, "You type one short message"),
@@ -33,7 +33,7 @@ CAPS = [
 def render(t):
     f = Frame(t)
     v = f.v
-    header(f, "What the LLM Actually Receives", "FROM LLM TO AI AGENT", PURPLE)
+    example_header(f, "Call 1: What the LLM Receives", 1)
     f.text((56, 108), "WHERE IT COMES FROM", inter(10.5, 700), LIGHT, v(0.9))
     f.text((SX0, 108), "ONE TOKEN SEQUENCE", inter(10.5, 700), LIGHT, v(7.1))
 
@@ -94,7 +94,7 @@ def render(t):
     # ---- skills: only the descriptions
     k = v(15.2)
     f.rrect((470, 556, 860, 622), 9, fill=GREEN_F, outline=GREEN, a=k, width=1.3)
-    f.text((486, 575), "dcm-guide: only its one-line description is in here", inter(12.3, 700), GREEN, k)
+    f.text((486, 575), SKILL + ": only its one-line description is in here", inter(12.3, 700), GREEN, k)
     f.text((486, 594), "The full SKILL.md is added later, if the model", inter(11.8, 400), GREY, k)
     f.text((486, 610), "decides the task needs it (see the next pages)", inter(11.8, 400), GREY, k)
 
@@ -102,7 +102,7 @@ def render(t):
     c = v(18.8)
     f.rrect((880, 478, 1232, 560), 10, fill=DARK, a=c)
     f.text((1056, 502), "The context window is the prompt.", inter(13.5, 600), (255, 255, 255), c, "mm")
-    f.text((1056, 524), f"You typed 9 of its {TOTAL:,} tokens.", inter(13.5, 600), (255, 255, 255), c, "mm")
+    f.text((1056, 524), f"You typed 10 of its {TOTAL:,} tokens.", inter(13.5, 600), (255, 255, 255), c, "mm")
     f.text((1056, 544), "numbers are illustrative", inter(10.5, 400), (170, 176, 190), c, "mm")
 
     captions(f, CAPS)

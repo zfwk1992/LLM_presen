@@ -10,8 +10,9 @@
 | `add_column.py` | `02f_new_token_adds_column.gif` |
 | `one_big_prompt.py` | `04a_one_big_prompt.gif` |
 | `tool_call_is_text.py` | `04b_tool_call_is_text.gif` |
-| `two_loops.py` | `04c_two_loops.gif` |
-| `agent_at_work.py` | `04e_agent_at_work.gif` |
+| `second_call.py` | `04c_second_call.gif` |
+| `agent_at_work.py` | `04d_agent_at_work.gif` |
+| `two_loops.py` | `04e_two_loops.gif` |
 | `note_02b.py` | 给 `02b_embedding_space.gif` 加右下角的说明框 |
 | `gifout.py` | 公用部分：标题、底部说明条、token 方块、GIF 输出 |
 

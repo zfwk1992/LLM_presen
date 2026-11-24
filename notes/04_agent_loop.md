@@ -1,8 +1,8 @@
 # 04 · Agent Loop（Agent 循环）
 
-![Agent loop](../llm_agent_animations_single_page/04d_agent_loop.gif)
+![Agent loop](../llm_agent_animations_single_page/04f_agent_loop.gif)
 
-> 这一页的 GIF 现在叫 `04d_agent_loop.gif`。它是比较抽象的总结图，建议先看 [04abc_agent_and_llm.md](04abc_agent_and_llm.md) 里更具体的三页（04a、04b、04c），再回来看这一页。
+> 这一页的 GIF 现在叫 `04f_agent_loop.gif`。它是比较抽象的总结图，用的例子（修复 Com 模块的单元测试）和前面五页不同。建议先看 [04_agent_example.md](04_agent_example.md) 里用同一个例子讲的五页（04a–04e），再回来看这一页。
 
 > **一句话**：Agent 就是把 LLM 放进一个循环里——想一步、做一步、看结果，直到它不再需要工具为止。
 

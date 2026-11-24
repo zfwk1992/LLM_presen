@@ -296,7 +296,14 @@ The answer ends when the model produces the end token.
 
 ---
 
-## 04a · What the LLM actually receives
+## 04a–04e · One example in five parts
+
+These five pages follow one request through the agent: `How do we integrate DCM into this project?`
+Each page shows the request in the top right corner and "PART n OF 5" in the top left.
+
+---
+
+## 04a · Call 1: what the LLM receives
 
 `04a_one_big_prompt.gif`
 
@@ -317,14 +324,14 @@ The answer ends when the model produces the end token.
 System prompt      written by Claude Code: how to behave             3,200 tokens
 Tool definitions   Read, Grep, Bash, Edit, Skill, MCP tools …        9,500 tokens
 CLAUDE.md          your project notes, loaded every session          1,400 tokens
-Skill list         one line per skill, e.g. dcm-guide                  600 tokens
-Your message       "Investigate how DCM works"                           9 tokens
+Skill list         one line per skill, e.g. dcm-integration            600 tokens
+Your message       "How do we integrate DCM into this project?"         10 tokens
 
-All 14,709 tokens become vectors and go in together: one forward pass
+All 14,710 tokens become vectors and go in together: one forward pass
 The LLM sees tokens. It has no idea which part you typed.
-dcm-guide: only its one-line description is in here.
+dcm-integration: only its one-line description is in here.
 The full SKILL.md is added later, if the model decides the task needs it.
-The context window is the prompt. You typed 9 of its 14,709 tokens.
+The context window is the prompt. You typed 10 of its 14,710 tokens.
 numbers are illustrative
 ```
 
@@ -332,13 +339,13 @@ numbers are illustrative
 
 ```
 What you type is only the last few tokens of a much longer prompt.
-The rest is assembled automatically by the harness before every call.
-To the model there is no difference between "system" text and "your" text. It is one sequence of tokens.
+The harness does not choose anything here. It always sends the same fixed parts.
+All skill descriptions are listed. Picking the right one is the model's job.
 ```
 
 ---
 
-## 04b · A tool call is just generated text
+## 04b · Call 1: what the LLM returns
 
 `04b_tool_call_is_text.gif`
 
@@ -356,15 +363,15 @@ To the model there is no difference between "system" text and "your" text. It is
 **Also on screen**
 
 ```
-{"type": "tool_use", "name": "Skill", "input": {"skill": "dcm-guide"}}
-Read as text, it says: use the tool "Skill" with skill = "dcm-guide"
+{"type": "tool_use", "name": "Skill", "input": {"skill": "dcm-integration"}}
+Read as text, it says: use the tool "Skill" with skill = "dcm-integration"
 one pass = one token
 each new token is appended, then the next pass runs
 24 tokens, 24 forward passes. Then the LLM is finished.
 No file was read. No command was run.
 Harness (Claude Code): an ordinary program, not a model
 parses the text · checks permission · then runs the tool
-Tool: Skill reads dcm-guide/SKILL.md from your disk
+Tool: Skill reads dcm-integration/SKILL.md from your disk
 tool_result: the SKILL.md text · about 2,100 tokens
 appended to the prompt → the harness calls the LLM again
 The LLM writes. The harness acts.
@@ -380,9 +387,132 @@ The result comes back as more text in the prompt.
 
 ---
 
-## 04c · Two loops
+## 04c · Call 2: everything is sent again
 
-`04c_two_loops.gif`
+`04c_second_call.gif`
+
+**Steps**
+
+```
+① Call 2 starts: the harness sends everything again, from the top
+② New at the end: what the LLM wrote, and the full SKILL.md text
+③ Now the LLM can read your workflow. It starts with step 1
+④ Again it only writes a request: run the extraction script
+⑤ The harness runs the script; the result joins the prompt
+⑥ Call 3 will receive all of this: the prompt only ever grows
+```
+
+**Also on screen**
+
+```
+THE PROMPT FOR CALL 2 (one sequence, in this order)
+
+SYSTEM              system prompt · tool definitions · CLAUDE.md · skill list   14,700 tokens
+USER                How do we integrate DCM into this project?
+                    → identical to call 1 (read from the cache)
+ASSISTANT           tool_use  Skill("dcm-integration")
+USER · TOOL_RESULT  SKILL.md   2,100 tokens
+                    1. Run scripts/extract_dcm_config.py on the EcuC ARXML
+                    2. Look up the requirements in the Dcm specification
+                    3. Read docs/architecture.md
+                    4. Check the Os and Rte definitions
+                    5. Then propose the changes
+                    → new in call 2: what the LLM wrote in call 1 + the skill's full text
+ASSISTANT           tool_use  Bash("…extract_dcm_config.py…")
+USER · TOOL_RESULT  3 protocols · 14 UDS services · 2 PDUs to route
+                    → added for call 3
+
+THE LLM'S REPLY
+"The skill says to start with the EcuC values."
+tool_use  Bash("python scripts/extract_dcm_config.py config/EcuC.arxml")
+still only text: nothing has run yet
+
+16,834 tokens sent in call 2  →  17,765 tokens will be sent in call 3
+Every call: send everything so far → the LLM writes one reply → the harness runs it → append
+Your workflow is followed because the LLM reads it in the prompt, not because the harness executes it.
+```
+
+**Extra**
+
+```
+The model has no memory between calls. It knows what happened only because the harness sends the whole history again.
+Your workflow in SKILL.md becomes visible to the model only now, in the second call.
+The order inside the prompt is fixed: unchanging parts first, the newest result last.
+```
+
+---
+
+## 04d · The whole session, call by call
+
+`04d_agent_at_work.gif`
+
+**Steps**
+
+```
+① One request. Project notes and skill descriptions are already in the prompt
+② Call 1: the model sees a matching skill and asks to load it
+③ Call 2: following your workflow, it asks to run the extraction script
+④ Calls 3 and 4: it asks the spec, then reads the repo's own rules
+⑤ Call 5: it checks Os and Rte and finds Dcm is not connected yet
+⑥ Call 6: no tool call this time. It writes the plan and the loop ends
+```
+
+**Also on screen**
+
+```
+USER  How do we integrate DCM into this project?
+
+LLM CALL 1  "A skill matches this task. Load it first."
+            asks for  Skill("dcm-integration")
+            harness ran it: SKILL.md loaded: your 5-step workflow   +2.1k
+LLM CALL 2  "Workflow step 1: get the EcuC values."
+            asks for  Bash("scripts/extract_dcm_config.py config/EcuC.arxml")
+            harness ran it: 3 protocols, 14 UDS services, 2 PDUs   +0.9k
+LLM CALL 3  "Step 2: what does the standard require?"
+            asks for  search_spec("Dcm integration PduR ComM")
+            harness ran it: 3 passages from SWS_Dcm, out of 600 pages   +1.8k
+LLM CALL 4  "Step 3: the rules of this repository."
+            asks for  Read("docs/architecture.md")
+            harness ran it: 180 lines   +2.4k
+LLM CALL 5  "Step 4: is Dcm already scheduled and connected?"
+            asks for  Grep("Dcm_MainFunction", "config/ rte/")
+            harness ran it: no matches: no Os task, no Rte port yet   +0.6k
+LLM CALL 6  "Step 5: I have enough. Write the plan."
+            writes  no tool call
+            1. Add Dcm_MainFunction to the 10 ms Os task   2. Route the 2 PDUs in PduR
+            3. Connect the Dcm ports in the Rte   4. Regenerate   (sources: EcuC, SWS_Dcm §7)
+
+YOUR PROJECT (on disk)
+CLAUDE.md                          in the prompt
+skills/dcm-integration/SKILL.md    loaded
+skills/misra-check/SKILL.md        1 line in prompt
+docs/AUTOSAR_SWS_Dcm.pdf           3 passages
+config/EcuC.arxml                  extracted by script
+docs/architecture.md               read
+config/Os.arxml · rte/             searched
+bsw/Dcm/                           never opened
+… 214 more files                   never opened
+
+The prompt: 14.7k → 16.8k → 17.7k → 19.5k → 21.9k → 22.5k tokens
+sent again in full at every call
+6 LLM calls · 5 tool runs by the harness · the model never opened a file itself
+token counts are illustrative
+```
+
+**Extra**
+
+```
+At the start only the project notes and one line per skill are in the prompt. Everything else is fetched on demand.
+The five steps come from your SKILL.md. The model follows them because it read them, one call at a time.
+The 600-page specification never enters the prompt as a whole. Only three relevant passages do.
+A script extracts the Dcm values from the large ARXML file, so only 900 tokens enter the prompt instead of the whole file.
+```
+
+---
+
+## 04e · Two loops
+
+`04e_two_loops.gif`
 
 **Steps**
 
@@ -401,13 +531,14 @@ The result comes back as more text in the prompt.
 HARNESS: Claude Code, a program
 LLM: predicts tokens, nothing else
 
-LLM call #1   14.7k tokens in   →  Skill("dcm-guide")   →  run Skill: SKILL.md, +2.1k
-LLM call #2   16.8k tokens in   →  Grep("Dcm_")         →  run Grep: 38 matches, +1.2k
-LLM call #3   18.0k tokens in   →  Read("Dcm_Dsl.c")    →  run Read: 612 lines, +9.4k
-LLM call #4   27.4k tokens in   →  the final answer     →  show answer (no tool call: stop)
+LLM call #1   14.7k tokens in   →  Skill("dcm-integration")      →  run Skill: SKILL.md, +2.1k
+LLM call #2   16.8k tokens in   →  Bash("extract_dcm_config")    →  run Bash: script output, +0.9k
+LLM call #3   17.7k tokens in   →  search_spec("Dcm …")          →  run search_spec: 3 passages, +1.8k
+calls 4 and 5 follow the same pattern
+LLM call #6   22.5k tokens in   →  the integration plan          →  show answer (no tool call: stop)
 
 WHAT EACH CALL RECEIVES (every call re-sends everything so far)
-OUTER LOOP · run by the harness · 4 rounds here
+OUTER LOOP · run by the harness · 6 rounds in this example
 INNER LOOP · inside every call · one token per forward pass
 Agent = a program calling the LLM in a loop
 The LLM never changes and never acts. It only receives a longer prompt each time.
@@ -418,15 +549,15 @@ token counts are illustrative
 
 ```
 An agent is not a new kind of model. It is the same model, called again and again by a program.
-The model has no memory between calls. The harness keeps the history and sends all of it every time.
-Every tool result stays in the prompt, so the prompt grows with each step.
+The model decides what to do next and when the task is finished. The harness only carries it out.
+The loop ends when a reply contains no tool call.
 ```
 
 ---
 
-## 04d · Agent loop
+## 04f · Agent loop (summary)
 
-`04d_agent_loop.gif`
+`04f_agent_loop.gif`
 
 This animation has no caption bar at the bottom.
 
@@ -468,63 +599,6 @@ Act: the harness runs the tool the model asked for
 Observe: the tool result is appended to the context
 Repeat until the model replies without a tool call
 Nobody scripted these four steps. The model chose each one after seeing the previous result.
-```
-
----
-
-## 04e · An agent at work
-
-`04e_agent_at_work.gif`
-
-**Steps**
-
-```
-① One request. Project notes and skill descriptions are already in the prompt
-② Call 1: the model sees a matching skill and asks to load it
-③ Call 2: following the skill, it asks to read the Dcm configuration
-④ Calls 3 and 4: it asks to search the routing, then to read the code
-⑤ Call 5: it asks the spec. Only 3 passages of 600 pages come back
-⑥ Call 6: no tool call this time. It writes the answer and the loop ends
-```
-
-**Also on screen**
-
-```
-USER  Analyze how DCM is integrated in this project.
-
-LLM CALL 1  "A skill matches this task. Load it first."
-            asks for  Skill("dcm-guide")
-            harness ran it: SKILL.md loaded: a 4-step checklist   +2.1k
-LLM CALL 2  "Checklist step 1: find the Dcm configuration."
-            asks for  Read("config/Dcm.arxml")
-            harness ran it: 3 protocols, 14 UDS services configured   +6.3k
-LLM CALL 3  "How do requests reach Dcm? Check the routing."
-            asks for  Grep("Dcm", "src/PduR/")
-            harness ran it: PduR_Cfg.c: 2 PDUs routed to Dcm   +0.8k
-LLM CALL 4  "Now the session handling code."
-            asks for  Read("src/Dcm/Dcm_Dsl.c")
-            harness ran it: 612 lines   +9.4k
-LLM CALL 5  "Compare with what the standard requires."
-            asks for  search_spec("Dcm PduR interface")
-            harness ran it: 3 passages from SWS_Dcm, out of 600 pages   +1.8k
-LLM CALL 6  "I have enough. Write the answer."
-            writes  no tool call
-            Dcm is reached through PduR (2 routed PDUs). Dsl handles sessions,
-            Dsp the 14 UDS services. Configured in Dcm.arxml. Matches SWS_Dcm §7.2.
-
-The prompt: 14.7k → 16.8k → 23.1k → 23.9k → 33.3k → 35.1k tokens
-sent again in full at every call
-6 LLM calls · 5 tool runs by the harness · the model never opened a file itself
-token counts are illustrative
-```
-
-**Extra**
-
-```
-At the start only the project notes and one line per skill are in the prompt. Everything else is fetched on demand.
-Nobody scripted these six steps. The model chose each one after seeing the previous result.
-The 600-page specification never enters the prompt as a whole. Only the three relevant passages do.
-Most of the project was never opened. The agent fetched only what it judged necessary.
 ```
 
 ---

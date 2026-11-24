@@ -221,7 +221,11 @@ Autoregressive: one token per step, until <end> or max_tokens
 | 14.8 s | ④ Repeat: each new token becomes part of the next input | ④ 重复：每个新 token 都成为下一次输入的一部分 |
 | 20.9 s | Autoregressive: one token per step, until \<end\> or max_tokens | 自回归：每步一个 token，直到 \<end\> 或 max_tokens |
 
-## 04a · LLM 实际收到了什么
+## 04a–04e · 同一个例子，五页
+
+这五页用同一句请求贯穿：`How do we integrate DCM into this project?`（我们如何在这个项目里集成 DCM？）。每页右上角都显示这句请求，左上角标着 PART 1–5 OF 5。
+
+## 04a · 第 1 次调用：LLM 收到了什么
 
 `04a_one_big_prompt.gif`
 
@@ -247,14 +251,14 @@ Autoregressive: one token per step, until <end> or max_tokens
 
 ```
 The LLM sees tokens. It has no idea which part you typed.
-dcm-guide: only its one-line description is in here.
+dcm-integration: only its one-line description is in here.
 The full SKILL.md is added later, if the model decides the task needs it.
-The context window is the prompt. You typed 9 of its 14,709 tokens.
+The context window is the prompt. You typed 10 of its 14,710 tokens.
 ```
 
-中文：LLM 看到的是 token，它不知道哪一部分是你打的。dcm-guide：这里只有它的一行简介。完整的 SKILL.md 之后才会加入，前提是模型判断任务需要它。上下文窗口就是提示词。在它的 14,709 个 token 里，你打了 9 个。
+中文：LLM 看到的是 token，它不知道哪一部分是你打的。dcm-integration：这里只有它的一行简介。完整的 SKILL.md 之后才会加入，前提是模型判断任务需要它。上下文窗口就是提示词。在它的 14,710 个 token 里，你打了 10 个。
 
-## 04b · 工具调用只是生成的文字
+## 04b · 第 1 次调用：LLM 返回了什么
 
 `04b_tool_call_is_text.gif`
 
@@ -279,6 +283,7 @@ The context window is the prompt. You typed 9 of its 14,709 tokens.
 画面上的其他文字：
 
 ```
+{"type": "tool_use", "name": "Skill", "input": {"skill": "dcm-integration"}}
 24 tokens, 24 forward passes. Then the LLM is finished.
 No file was read. No command was run.
 The LLM writes. The harness acts.
@@ -286,9 +291,108 @@ The LLM writes. The harness acts.
 
 中文：24 个 token，24 次前向传播。然后 LLM 就结束了。没有读取任何文件，没有运行任何命令。LLM 负责写，harness 负责做。
 
-## 04c · 两层循环
+## 04c · 第 2 次调用：全部重新发送
 
-`04c_two_loops.gif`
+`04c_second_call.gif`
+
+```
+① Call 2 starts: the harness sends everything again, from the top
+② New at the end: what the LLM wrote, and the full SKILL.md text
+③ Now the LLM can read your workflow. It starts with step 1
+④ Again it only writes a request: run the extraction script
+⑤ The harness runs the script; the result joins the prompt
+⑥ Call 3 will receive all of this: the prompt only ever grows
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① Call 2 starts: the harness sends everything again, from the top | ① 第 2 次调用开始：harness 从头把所有内容再发一遍 |
+| 3.6 s | ② New at the end: what the LLM wrote, and the full SKILL.md text | ② 末尾新增的：LLM 上次写的内容，以及 SKILL.md 的全文 |
+| 7.6 s | ③ Now the LLM can read your workflow. It starts with step 1 | ③ 现在 LLM 能读到你的流程了。它从第 1 步开始 |
+| 11.0 s | ④ Again it only writes a request: run the extraction script | ④ 它同样只是写出一个请求：运行提取脚本 |
+| 13.6 s | ⑤ The harness runs the script; the result joins the prompt | ⑤ harness 运行脚本，结果加入提示词 |
+| 16.8 s | ⑥ Call 3 will receive all of this: the prompt only ever grows | ⑥ 第 3 次调用会收到这一切：提示词只增不减 |
+
+画面左侧的提示词，从上到下：
+
+```
+SYSTEM              system prompt · tool definitions · CLAUDE.md · skill list   (14,700 tokens, identical to call 1)
+USER                How do we integrate DCM into this project?
+ASSISTANT           tool_use  Skill("dcm-integration")
+USER · TOOL_RESULT  SKILL.md   2,100 tokens
+                    1. Run scripts/extract_dcm_config.py on the EcuC ARXML
+                    2. Look up the requirements in the Dcm specification
+                    3. Read docs/architecture.md
+                    4. Check the Os and Rte definitions
+                    5. Then propose the changes
+ASSISTANT           tool_use  Bash("…extract_dcm_config.py…")          (added for call 3)
+USER · TOOL_RESULT  3 protocols · 14 UDS services · 2 PDUs to route    (added for call 3)
+```
+
+结尾的深色框：
+
+```
+Every call: send everything so far → the LLM writes one reply → the harness runs it → append
+Your workflow is followed because the LLM reads it in the prompt, not because the harness executes it.
+```
+
+中文：每一次调用：把到目前为止的所有内容发过去 → LLM 写出一个回复 → harness 执行 → 追加。你的流程之所以被遵守，是因为 LLM 在提示词里读到了它，而不是因为 harness 去执行它。
+
+## 04d · 完整过程，逐次调用
+
+`04d_agent_at_work.gif`
+
+```
+① One request. Project notes and skill descriptions are already in the prompt
+② Call 1: the model sees a matching skill and asks to load it
+③ Call 2: following your workflow, it asks to run the extraction script
+④ Calls 3 and 4: it asks the spec, then reads the repo's own rules
+⑤ Call 5: it checks Os and Rte and finds Dcm is not connected yet
+⑥ Call 6: no tool call this time. It writes the plan and the loop ends
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① One request. Project notes and skill descriptions are already in the prompt | ① 一个请求。项目说明和 skill 简介已经在提示词里 |
+| 2.6 s | ② Call 1: the model sees a matching skill and asks to load it | ② 调用 1：模型看到匹配的 skill，要求加载它 |
+| 6.0 s | ③ Call 2: following your workflow, it asks to run the extraction script | ③ 调用 2：按照你的流程，它要求运行提取脚本 |
+| 9.2 s | ④ Calls 3 and 4: it asks the spec, then reads the repo's own rules | ④ 调用 3 和 4：它查询规范，然后读取本仓库自己的规则 |
+| 15.6 s | ⑤ Call 5: it checks Os and Rte and finds Dcm is not connected yet | ⑤ 调用 5：它检查 Os 和 Rte，发现 Dcm 还没有接入 |
+| 18.8 s | ⑥ Call 6: no tool call this time. It writes the plan and the loop ends | ⑥ 调用 6：这次没有工具调用。它写出方案，循环结束 |
+
+画面中间的六张卡片和结尾的深色框：
+
+```
+USER  How do we integrate DCM into this project?
+
+LLM CALL 1  "A skill matches this task. Load it first."
+            asks for  Skill("dcm-integration")
+            harness ran it: SKILL.md loaded: your 5-step workflow   +2.1k
+LLM CALL 2  "Workflow step 1: get the EcuC values."
+            asks for  Bash("scripts/extract_dcm_config.py config/EcuC.arxml")
+            harness ran it: 3 protocols, 14 UDS services, 2 PDUs   +0.9k
+LLM CALL 3  "Step 2: what does the standard require?"
+            asks for  search_spec("Dcm integration PduR ComM")
+            harness ran it: 3 passages from SWS_Dcm, out of 600 pages   +1.8k
+LLM CALL 4  "Step 3: the rules of this repository."
+            asks for  Read("docs/architecture.md")
+            harness ran it: 180 lines   +2.4k
+LLM CALL 5  "Step 4: is Dcm already scheduled and connected?"
+            asks for  Grep("Dcm_MainFunction", "config/ rte/")
+            harness ran it: no matches: no Os task, no Rte port yet   +0.6k
+LLM CALL 6  "Step 5: I have enough. Write the plan."
+            writes  no tool call
+            1. Add Dcm_MainFunction to the 10 ms Os task   2. Route the 2 PDUs in PduR
+            3. Connect the Dcm ports in the Rte   4. Regenerate   (sources: EcuC, SWS_Dcm §7)
+
+6 LLM calls · 5 tool runs by the harness · the model never opened a file itself
+```
+
+中文（深色框）：6 次 LLM 调用 · harness 执行了 5 次工具 · 模型自己从未打开过任何文件。
+
+## 04e · 两层循环
+
+`04e_two_loops.gif`
 
 ```
 ① The harness builds the prompt and calls the LLM
@@ -311,17 +415,18 @@ The LLM writes. The harness acts.
 画面上的其他文字：
 
 ```
-OUTER LOOP · run by the harness · 4 rounds here
+OUTER LOOP · run by the harness · 6 rounds in this example
 INNER LOOP · inside every call · one token per forward pass
+calls 4 and 5 follow the same pattern
 Agent = a program calling the LLM in a loop
 The LLM never changes and never acts. It only receives a longer prompt each time.
 ```
 
-中文：外层循环，由 harness 执行，这里是 4 轮。内层循环，在每一次调用内部，每次前向传播一个 token。Agent = 一个在循环里调用 LLM 的程序。LLM 从不改变，也从不行动，它只是每次收到一个更长的提示词。
+中文：外层循环，由 harness 执行，这个例子里是 6 轮。内层循环，在每一次调用内部，每次前向传播一个 token。第 4、5 次调用是同样的模式。Agent = 一个在循环里调用 LLM 的程序。LLM 从不改变，也从不行动，它只是每次收到一个更长的提示词。
 
-## 04d · Agent Loop
+## 04f · Agent Loop
 
-`04d_agent_loop.gif`
+`04f_agent_loop.gif`
 
 **这一页底部没有说明文字。** 画面是靠左边的环、左下的伪代码和右边的上下文面板来讲的。
 
@@ -342,58 +447,6 @@ Repeat until the model replies without a tool call
 | Repeat until the model replies without a tool call | 重复，直到模型的回复不再包含工具调用 |
 
 画面上原有的文字可以直接引用的有两处：上下文面板的标题 `CONTEXT (grows with every step)`（上下文，每一步都在增长），以及退出时的标注 `no tool call → Answer ✓`。
-
-## 04e · 一个 Agent 的实际工作过程
-
-`04e_agent_at_work.gif`
-
-```
-① One request. Project notes and skill descriptions are already in the prompt
-② Call 1: the model sees a matching skill and asks to load it
-③ Call 2: following the skill, it asks to read the Dcm configuration
-④ Calls 3 and 4: it asks to search the routing, then to read the code
-⑤ Call 5: it asks the spec. Only 3 passages of 600 pages come back
-⑥ Call 6: no tool call this time. It writes the answer and the loop ends
-```
-
-| 出现时间 | 英文原文 | 中文 |
-|---|---|---|
-| 0.8 s | ① One request. Project notes and skill descriptions are already in the prompt | ① 一个请求。项目说明和 skill 简介已经在提示词里 |
-| 2.6 s | ② Call 1: the model sees a matching skill and asks to load it | ② 调用 1：模型看到匹配的 skill，要求加载它 |
-| 6.0 s | ③ Call 2: following the skill, it asks to read the Dcm configuration | ③ 调用 2：按照 skill，它要求读取 Dcm 配置 |
-| 9.2 s | ④ Calls 3 and 4: it asks to search the routing, then to read the code | ④ 调用 3 和 4：它要求搜索路由，然后读取代码 |
-| 15.6 s | ⑤ Call 5: it asks the spec. Only 3 passages of 600 pages come back | ⑤ 调用 5：它查询规范。600 页里只返回 3 段 |
-| 18.8 s | ⑥ Call 6: no tool call this time. It writes the answer and the loop ends | ⑥ 调用 6：这次没有工具调用。它写出答案，循环结束 |
-
-画面中间的六张卡片和结尾的深色框：
-
-```
-USER  Analyze how DCM is integrated in this project.
-
-LLM CALL 1  "A skill matches this task. Load it first."
-            asks for  Skill("dcm-guide")
-            harness ran it: SKILL.md loaded: a 4-step checklist   +2.1k
-LLM CALL 2  "Checklist step 1: find the Dcm configuration."
-            asks for  Read("config/Dcm.arxml")
-            harness ran it: 3 protocols, 14 UDS services configured   +6.3k
-LLM CALL 3  "How do requests reach Dcm? Check the routing."
-            asks for  Grep("Dcm", "src/PduR/")
-            harness ran it: PduR_Cfg.c: 2 PDUs routed to Dcm   +0.8k
-LLM CALL 4  "Now the session handling code."
-            asks for  Read("src/Dcm/Dcm_Dsl.c")
-            harness ran it: 612 lines   +9.4k
-LLM CALL 5  "Compare with what the standard requires."
-            asks for  search_spec("Dcm PduR interface")
-            harness ran it: 3 passages from SWS_Dcm, out of 600 pages   +1.8k
-LLM CALL 6  "I have enough. Write the answer."
-            writes  no tool call
-            Dcm is reached through PduR (2 routed PDUs). Dsl handles sessions,
-            Dsp the 14 UDS services. Configured in Dcm.arxml. Matches SWS_Dcm §7.2.
-
-6 LLM calls · 5 tool runs by the harness · the model never opened a file itself
-```
-
-中文（深色框）：6 次 LLM 调用 · harness 执行了 5 次工具 · 模型自己从未打开过任何文件。
 
 ## 05 · Tool Calling
 
@@ -573,9 +626,10 @@ Two independent knobs, multiplied together
 | 03_generation_loop | 6 |
 | 04a_one_big_prompt | 6 |
 | 04b_tool_call_is_text | 6 |
-| 04c_two_loops | 6 |
-| 04d_agent_loop | 0（底部无说明） |
-| 04e_agent_at_work | 6 |
+| 04c_second_call | 6 |
+| 04d_agent_at_work | 6 |
+| 04e_two_loops | 6 |
+| 04f_agent_loop | 0（底部无说明） |
 | 05_tool_calling | 6 |
 | 06_rag | 6 |
 | 07a_mcp_why | 2 |
@@ -585,4 +639,4 @@ Two independent knobs, multiplied together
 | 10a_model | 2 |
 | 10b_effort | 2 |
 | 10c_cost_formula | 1 |
-| **合计** | **96** |
+| **合计** | **102** |
