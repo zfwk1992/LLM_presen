@@ -1,10 +1,12 @@
 # 02 · Embedding（嵌入向量）
 
-这个主题有两页。
+这个主题有三页：02a、02b、02d。中间的 02c 是一张全程总览图，单独写在 [02c_whole_path.md](02c_whole_path.md) 里，建议先读那一篇。
 
 ![Embedding lookup](../llm_agent_animations_single_page/02a_embedding_lookup.gif)
 
 ![Embedding space](../llm_agent_animations_single_page/02b_embedding_space.gif)
+
+![Vectors into the Transformer](../llm_agent_animations_single_page/02d_vectors_into_transformer.gif)
 
 > **一句话**：每个 token ID 在一张学出来的大表里对应一行数字，这行数字就是它的向量；意思相近的 token，向量的方向也相近。
 
@@ -53,6 +55,59 @@ cos θ = a · b / (‖a‖ ‖b‖)
 - 分子是两个向量的点积，分母是两个向量长度的乘积。结果只和**夹角**有关，和向量长短无关。
 - 取值范围 −1 到 1。接近 1：方向几乎相同，意思相近。接近 0：几乎垂直，无关。接近 −1：方向相反。
 - 画面右下角的总结："Direction encodes meaning: small angle → related concepts"（方向编码含义，夹角小说明概念相关）。
+
+## 相似度到底用在哪里
+
+这是 02b 最容易引起的误会：看完那一页，很容易以为"得到向量之后，要先算相似度，再送进模型"。**不是这样。**
+
+- **02b 里的余弦相似度不是流程中的一步。** 它是我们作为旁观者，拿来检查这个向量空间长什么样的工具。它说明的是一个性质：训练出来的向量，意思相近的方向也相近。模型推理时并不会去算 "CAN 和 LIN 有多像"。
+- **向量是直接送进网络的。** 查表得到向量，加上位置信息，然后原样进入第一层。中间没有任何"比较"的步骤。
+
+真正在流程里出现"向量之间做比较"的地方有三个，都不在 embedding 这一步：
+
+| 在哪里 | 比较的是什么 | 目的 | 页面 |
+|---|---|---|---|
+| Attention（网络内部） | 两个 token 的向量（各自经过学习到的变换之后）做点积 | 决定一个 token 从另一个 token 那里读取多少信息 | 02d |
+| 输出层（网络最后） | 最后一个位置的向量，和词表里每个 token 的向量做点积 | 得到每个候选 token 的分数 | 02d、03 |
+| RAG 检索（网络外部） | 问题的向量和每个文档块的向量算余弦相似度 | 找出最相关的文档块 | 06 |
+
+所以可以这样讲：**"方向相近表示意思相近"这个性质，是后面这三处比较能起作用的前提**。02b 展示的是这个性质本身，而不是一次计算。
+
+为了不让听众产生同样的误会，02b 的画面右下角现在加了一个橙色说明框，在动画最后两秒出现：
+
+```
+Not a step in the pipeline
+This is not computed before the vectors go in.
+It only shows what training produced.
+The vectors go straight into the network.
+```
+
+## 第三页：向量怎样进入 Transformer（02d，23.0 s）
+
+这一页是 02c 总览图里 "Transformer" 那个框的放大：向量进到网络里之后，内部发生了什么，又怎么变成"下一个 token 的分数"。时间紧的话这一页可以跳过，02c 不建议跳。例句沿用 03 的 `The ·ECU ·reads ·the ·CAN`，最后得到的分数（bus 58%）和 03 第一轮的候选完全一致，两页可以直接衔接。
+
+| 时间 | 字幕 | 画面 | 这时候讲什么 |
+|---|---|---|---|
+| 0.8 s | ① Each token ID is looked up: one vector per token | 5 个 token 各自向下得到一条彩色的向量 | "5 个 token，查表得到 5 个向量。到这里没有任何比较" |
+| 4.6 s | ② Position is added, so the model knows the word order | 每条向量下方出现 `+ pos 1…5`，得到第二行向量 | "再把位置信息加进去，否则模型分不清词序" |
+| 7.6 s | ③ Attention: each vector pulls in information from earlier tokens | Layer 1 的框出现；各位置之间连线，指向 `·CAN` 的几条线粗细不同 | "每个向量都从前面的 token 那里读取信息。线越粗读得越多" |
+| 约 9.8 s | 右侧出现 "Where is similarity used?" | — | **回答相似度的问题**：点积出现在这里 |
+| 12.0 s | ④ MLP: then every vector is transformed on its own | 5 个 MLP 方块依次闪亮，下方得到新的一行向量 | "然后每个向量各自再做一次变换" |
+| 14.4 s | ⑤ Repeat for N layers: same shape, richer meaning | 省略号、Layer N、最后一行向量 | "同样两步重复很多层。个数和维数始终不变" |
+| 17.2 s | ⑥ The last vector is scored against every token in the vocabulary | 最后一个位置的向量被框出，箭头指向右侧的分数面板 | "只取最后一个位置的向量，和词表里每个 token 比一遍" |
+| 20.6 s | One forward pass, done. Next: the generation loop | 深色框：No similarity step in between: vectors go straight in. | "这就是一次前向传播。下一页让它循环起来" |
+
+### 这一页要讲清楚的五件事
+
+1. **输入是 n 个向量，不是一个。** 上下文里有几个 token，就有几个向量同时进入网络。画面最底下那句话是关键：*shape never changes: n vectors × d numbers*。每一层进去是 n × d，出来还是 n × d。
+2. **位置信息是另外加上去的。** 查表不含顺序。画面右侧的例子：`ECU reads CAN` 和 `CAN reads ECU` 用的是同样三个 token，只有加上位置才能区分。具体怎么加，不同模型做法不同，动画画的是最直观的一种。
+3. **Attention 是 token 之间交换信息的地方。** `·CAN` 这个位置原本只知道自己是 "CAN"。经过 attention，它从 `·ECU`、`·reads` 那里读到了信息，于是它的向量现在表示的是"这个句子里、被 ECU 读取的那个 CAN"。这就是前面说的"同一个 token，查表得到的向量相同，靠后面的层区分含义"。
+4. **只能往前看。** 画面里所有的线都是从左边的 token 指向右边的 token。每个位置只能读取它自己和它之前的 token，不能看后面的。这和生成方式一致：后面的 token 还没生成出来。
+5. **只有最后一个位置的输出被用来预测。** 5 个位置都有输出向量，但预测下一个 token 只看最后一个。它和词表里每个 token 的向量做点积，得到分数，再经 softmax 变成概率。
+
+### 关于画面上的数字
+
+指向 `·CAN` 的线的粗细是示意的权重，不是真实模型的数值。分数面板里的四个百分比取自 03，是为了让两页接得上。
 
 ## 需要真正搞懂的概念
 
@@ -108,8 +163,10 @@ V × d 个数。按 10 万词表、几千维估算，是几亿个参数的量级
 ## 承上启下
 
 - **上一页**：01 得到一串整数。
-- **下一页**：现在每个 token 都是一个向量了。下一页把这些向量送进网络，看模型怎样用它们算出下一个 token。
-- **过渡句**："到这里，一句话变成了一组向量。接下来才是模型真正开始工作的地方。"
+- **02b → 02c 的过渡句**："这些向量有了方向和含义。那它们接下来去哪儿？要先算相似度吗？不用，直接送进网络。我们看一下全程。"
+- **02c → 02d 的过渡句**："刚才把网络当成一个黑盒。现在打开它看一眼。"
+- **下一页**：02d 展示了一次完整的前向传播，得到下一个 token 的分数。03 让这个过程循环起来。
+- **02d → 03 的过渡句**："刚才我们走完了一遍：5 个向量进去，一组分数出来。接下来只要选一个 token 接到后面，再走一遍。"
 
 ## 自测
 
@@ -126,7 +183,19 @@ V × d 个数。按 10 万词表、几千维估算，是几亿个参数的量级
 </details>
 
 <details>
-<summary>3. 同一个 token "CAN" 在不同句子里，查表得到的向量一样吗？模型怎么区分它的不同含义？</summary>
+<summary>3. 得到向量之后，要先计算相似度再送进模型吗？流程里哪里真的在比较向量？</summary>
+
+不用，向量直接进入网络。真正的比较发生在三处：attention 里两个 token 的向量做点积；输出层里最后一个向量和词表每个 token 的向量做点积；以及模型外部的 RAG 检索。
+</details>
+
+<details>
+<summary>4. 输入 5 个 token，网络每一层的输入和输出各是几个向量？预测下一个 token 用的是哪一个？</summary>
+
+每一层都是 5 个进、5 个出，维数也不变。预测只用最后一个位置的输出向量。
+</details>
+
+<details>
+<summary>5. 同一个 token "CAN" 在不同句子里，查表得到的向量一样吗？模型怎么区分它的不同含义？</summary>
 
 查表得到的向量完全一样。区分含义靠后面的 Transformer 层，它们根据上下文修改每个位置的向量。
 </details>
