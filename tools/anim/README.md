@@ -1,12 +1,15 @@
 # 动画生成脚本
 
-这里的脚本生成后来新增或修改的三页动画，输出到 `llm_agent_animations_single_page/`。
+这里的脚本生成后来新增或修改的几页动画，输出到 `llm_agent_animations_single_page/`。
 
 | 脚本 | 生成 |
 |---|---|
 | `whole_path.py` | `02c_whole_path.gif` |
 | `inside_transformer.py` | `02d_vectors_into_transformer.gif` |
+| `copies.py` | `02e_one_network_per_token.gif` |
+| `add_column.py` | `02f_new_token_adds_column.gif` |
 | `note_02b.py` | 给 `02b_embedding_space.gif` 加右下角的说明框 |
+| `gifout.py` | 公用部分：标题、底部说明条、token 方块、GIF 输出 |
 
 ## 依赖
 

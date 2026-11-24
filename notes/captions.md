@@ -129,6 +129,76 @@ No similarity step in between: vectors go straight in.
 
 中文：中间没有"计算相似度"这一步，向量直接进入网络。
 
+## 02e · 一个网络，复制给每个 token
+
+`02e_one_network_per_token.gif`
+
+```
+① One token: its vector of d numbers goes through one small network
+② Five tokens: the same network is used five times, at the same time
+③ Attention links the copies: each token reads the ones before it
+④ Attention + MLP is one layer. All columns pass layer after layer
+⑤ The last column has seen everything: its output gives the next token
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① One token: its vector of d numbers goes through one small network | ① 一个 token：它的向量（d 个数）通过一个小网络 |
+| 5.0 s | ② Five tokens: the same network is used five times, at the same time | ② 五个 token：同一个网络被用五次，而且是同时 |
+| 9.6 s | ③ Attention links the copies: each token reads the ones before it | ③ Attention 把这些副本连起来：每个 token 读取它前面的 token |
+| 14.6 s | ④ Attention + MLP is one layer. All columns pass layer after layer | ④ Attention + MLP 是一层。所有列一层接一层地通过 |
+| 18.2 s | ⑤ The last column has seen everything: its output gives the next token | ⑤ 最后一列读到了全部内容：它的输出给出下一个 token |
+
+画面右侧还有几段说明和结尾的深色框：
+
+```
+Width = d: the size of one vector, not the number of tokens
+Attention = the links: each token reads the tokens before it; earlier tokens never read later ones
+one set of weights (for this layer): stored once, used in every column
+5 tokens → 5 columns, no extra weights
+Layer by layer: every column passes layer 1, then every column passes layer 2, …
+One set of weights. One column per token.
+```
+
+中文：宽度 = d，是一个向量的大小，不是 token 的个数。Attention 就是连接：每个 token 读取它前面的 token，前面的 token 从不读取后面的。（这一层）只有一套权重：只存一份，每一列都用它。5 个 token → 5 列，不增加权重。逐层推进：所有列通过第 1 层，然后所有列通过第 2 层……一套权重，每个 token 一列。
+
+## 02f · 新 token 加一列
+
+`02f_new_token_adds_column.gif`
+
+```
+① The prompt: 5 tokens, 5 columns, all computed in one pass
+② The last column gives the next token
+③ The new token becomes column 6: only this column is new work
+④ It reads the saved results of the columns before it
+⑤ Every new token adds one column: more to read, same weights
+⑥ Longer context costs more per step; the network never changes
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① The prompt: 5 tokens, 5 columns, all computed in one pass | ① 提示词：5 个 token，5 列，一次全部算完 |
+| 4.6 s | ② The last column gives the next token | ② 最后一列给出下一个 token |
+| 7.4 s | ③ The new token becomes column 6: only this column is new work | ③ 新 token 成为第 6 列：只有这一列是新的计算 |
+| 11.0 s | ④ It reads the saved results of the columns before it | ④ 它读取前面各列保存下来的结果 |
+| 14.6 s | ⑤ Every new token adds one column: more to read, same weights | ⑤ 每个新 token 增加一列：要读的更多，权重不变 |
+| 18.6 s | ⑥ Longer context costs more per step; the network never changes | ⑥ 上下文越长，每一步代价越高；网络本身从不改变 |
+
+画面右侧的面板和结尾的深色框：
+
+```
+This forward pass
+tokens in context          5 → 6 → 7
+columns computed now       5 → 1 → 1
+columns read from memory   0 → 5 → 6
+weights                    same
+
+Longer context: every new column has more columns to read, so each step costs a little more
+New token = new column. The weights stay the same.
+```
+
+中文：本次前向传播。上下文中的 token 数：5 → 6 → 7。本次计算的列数：5 → 1 → 1。从保存结果中读取的列数：0 → 5 → 6。权重：不变。上下文更长：每个新列要读取的列更多，所以每一步的代价都高一点。新 token = 新的一列。权重保持不变。
+
 ## 03 · Generation Loop
 
 `03_generation_loop.gif`
@@ -348,6 +418,8 @@ Two independent knobs, multiplied together
 | 02b_embedding_space | 2 |
 | 02c_whole_path | 7 |
 | 02d_vectors_into_transformer | 7 |
+| 02e_one_network_per_token | 5 |
+| 02f_new_token_adds_column | 6 |
 | 03_generation_loop | 6 |
 | 04_agent_loop | 0（底部无说明） |
 | 05_tool_calling | 6 |
@@ -359,4 +431,4 @@ Two independent knobs, multiplied together
 | 10a_model | 2 |
 | 10b_effort | 2 |
 | 10c_cost_formula | 1 |
-| **合计** | **61** |
+| **合计** | **72** |

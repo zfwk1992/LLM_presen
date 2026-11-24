@@ -1,6 +1,6 @@
 # LLM 与 AI Agent 演讲 · 学习笔记
 
-这套笔记和 [../llm_agent_animations_single_page/](../llm_agent_animations_single_page/) 里的 16 个 GIF 一一对应。每篇笔记讲清楚一页动画：画面每一步在演示什么、背后的概念、容易讲错的地方、听众可能问什么。
+这套笔记和 [../llm_agent_animations_single_page/](../llm_agent_animations_single_page/) 里的 18 个 GIF 一一对应。每篇笔记讲清楚一页动画：画面每一步在演示什么、背后的概念、容易讲错的地方、听众可能问什么。
 
 ## 整体故事线
 
@@ -8,7 +8,7 @@
 
 | 章节 | 回答的问题 | 页面 |
 |---|---|---|
-| LLM Fundamentals | 模型本身到底在做什么？ | 01 → 02a → 02b → 02c → 02d → 03 |
+| LLM Fundamentals | 模型本身到底在做什么？ | 01 → 02a → 02b → 02c → 02d → 02e → 02f → 03 |
 | From LLM to AI Agent | 只会写字的模型怎么"做事"？ | 04 → 05 |
 | Extending Capabilities | 怎么让它知道更多、连上更多系统、又不被信息淹没？ | 06 → 07a → 07b → 08 → 09 |
 | Claude Code | 用的时候有哪两个旋钮？ | 10a → 10b → 10c |
@@ -28,25 +28,31 @@
 | 3 | `02b_embedding_space.gif` | 8.8 s | [02_embedding.md](02_embedding.md) | 意思相近的向量方向相近 |
 | 4 | `02c_whole_path.gif` | 23.5 s | [02c_whole_path.md](02c_whole_path.md) | 全程总览：向量进，概率出，选一个 token，放回输入 |
 | 5 | `02d_vectors_into_transformer.gif` | 23.0 s | [02_embedding.md](02_embedding.md) | 网络内部：逐层变换，最后一个向量得到分数 |
-| 6 | `03_generation_loop.gif` | 23.4 s | [03_generation_loop.md](03_generation_loop.md) | 一次只生成一个 token，然后重复 |
-| 7 | `04_agent_loop.gif` | 21.4 s | [04_agent_loop.md](04_agent_loop.md) | Agent = LLM + 工具 + 循环 |
-| 8 | `05_tool_calling.gif` | 21.4 s | [05_tool_calling.md](05_tool_calling.md) | 模型只写结构化文本，执行的是 harness |
-| 9 | `06_rag.gif` | 21.4 s | [06_rag.md](06_rag.md) | 先检索，再把检索结果放进 prompt |
-| 10 | `07a_mcp_why.gif` | 6.7 s | [07_mcp.md](07_mcp.md) | M×N 个集成变成 M+N 个 |
-| 11 | `07b_mcp_how.gif` | 16.1 s | [07_mcp.md](07_mcp.md) | 连接、发现、调用三步 |
-| 12 | `08_skills.gif` | 19.4 s | [08_skills.md](08_skills.md) | 三级按需加载，装很多也不占上下文 |
-| 13 | `09_context_engineering.gif` | 23.4 s | [09_context_engineering.md](09_context_engineering.md) | 上下文是有限资源，要管理 |
-| 14 | `10a_model.gif` | 10.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 模型 = 用哪套权重 |
-| 15 | `10b_effort.gif` | 10.6 s | [10_model_vs_effort.md](10_model_vs_effort.md) | Effort = 同一个模型干多少活 |
-| 16 | `10c_cost_formula.gif` | 5.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 两个旋钮相乘 |
+| 6 | `02e_one_network_per_token.gif` | 22.5 s | [02e_02f_network_structure.md](02e_02f_network_structure.md) | 同一套权重用在每个 token 上，attention 把各列连起来 |
+| 7 | `02f_new_token_adds_column.gif` | 22.5 s | [02e_02f_network_structure.md](02e_02f_network_structure.md) | 每个新 token 加一列，前面的列复用，权重不变 |
+| 8 | `03_generation_loop.gif` | 23.4 s | [03_generation_loop.md](03_generation_loop.md) | 一次只生成一个 token，然后重复 |
+| 9 | `04_agent_loop.gif` | 21.4 s | [04_agent_loop.md](04_agent_loop.md) | Agent = LLM + 工具 + 循环 |
+| 10 | `05_tool_calling.gif` | 21.4 s | [05_tool_calling.md](05_tool_calling.md) | 模型只写结构化文本，执行的是 harness |
+| 11 | `06_rag.gif` | 21.4 s | [06_rag.md](06_rag.md) | 先检索，再把检索结果放进 prompt |
+| 12 | `07a_mcp_why.gif` | 6.7 s | [07_mcp.md](07_mcp.md) | M×N 个集成变成 M+N 个 |
+| 13 | `07b_mcp_how.gif` | 16.1 s | [07_mcp.md](07_mcp.md) | 连接、发现、调用三步 |
+| 14 | `08_skills.gif` | 19.4 s | [08_skills.md](08_skills.md) | 三级按需加载，装很多也不占上下文 |
+| 15 | `09_context_engineering.gif` | 23.4 s | [09_context_engineering.md](09_context_engineering.md) | 上下文是有限资源，要管理 |
+| 16 | `10a_model.gif` | 10.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 模型 = 用哪套权重 |
+| 17 | `10b_effort.gif` | 10.6 s | [10_model_vs_effort.md](10_model_vs_effort.md) | Effort = 同一个模型干多少活 |
+| 18 | `10c_cost_formula.gif` | 5.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 两个旋钮相乘 |
 
 另有 [glossary.md](glossary.md)：中英文术语对照，备查；[captions.md](captions.md)：每页动画底部说明文字的原文和翻译，可直接贴到 PPT。
 
-`02c` 和 `02d` 是后来新增的两页，`02b` 末尾加了一个说明框，原始循环版文件夹里没有这些内容。生成脚本在 [../tools/anim/](../tools/anim/)：`whole_path.py` 生成 02c，`inside_transformer.py` 生成 02d，`note_02b.py` 给 02b 加说明框。以后要改文字或节奏可以直接改脚本重新生成。
+`02c` 到 `02f` 是后来新增的四页，`02b` 末尾加了一个说明框，原始循环版文件夹里没有这些内容。生成脚本在 [../tools/anim/](../tools/anim/)，以后要改文字或节奏可以直接改脚本重新生成。
 
-动画总时长约 4 分 20 秒。
+动画总时长约 5 分 05 秒。
 
-如果时间不够，`02d` 可以跳过；`02c` 是连接 embedding 和生成循环的那一页，不建议跳。如果每页在动画之外再讲 1–2 分钟，全场大约 20–30 分钟；这只是按页数估的，请按你实际拿到的时间调整。
+`02c` 到 `02f` 都在讲 embedding 和生成循环之间的那一段，四页全放会偏长。建议的取舍：
+
+- **必放**：`02c`，它是连接前后的总览。
+- **三选一或二**：`02d`（网络内部的完整流程）、`02e`（共享权重和列的结构）、`02f`（生成时加一列、为什么长上下文更贵）。`02d` 和 `02e` 内容有重叠，一般二选一。
+- **听众有传统神经网络背景**时优先 `02e`，它正面纠正"固定输入口、空位填零"的想象。如果每页在动画之外再讲 1–2 分钟，全场大约 20–30 分钟；这只是按页数估的，请按你实际拿到的时间调整。
 
 ## 建议的学习顺序
 
