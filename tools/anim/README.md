@@ -18,6 +18,7 @@
 | `rag_agent_uses_it.py` | `06c_rag_agent_uses_it.gif` |
 | `mcp_in_detail.py` | `07c_mcp_in_detail.gif` |
 | `architecture.py` | `09b_architecture.gif` |
+| `architecture_detail.py` | `09c_architecture_detail.gif` |
 | `same_task_models.py` | `10d_same_task_models.gif` |
 | `same_task_effort.py` | `10e_same_task_effort.gif` |
 | `note_02b.py` | 给 `02b_embedding_space.gif` 加右下角的说明框 |

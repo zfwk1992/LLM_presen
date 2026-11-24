@@ -1070,6 +1070,72 @@ The model decides what it needs. The harness fetches it and puts the result into
 
 ---
 
+## 09c · Inside the harness: one round, and how it stops
+
+`09c_architecture_detail.gif`
+
+**Steps**
+
+```
+① The harness keeps the whole conversation and builds the prompt from it
+② The prompt goes to the model provider; one reply comes back
+③ The harness parses the reply and asks one question: is there a tool call?
+④ Yes: check permission, then route it to the right executor
+⑤ The result becomes text, is appended, and the next round starts
+⑥ Same path every round. One day the reply contains no tool call
+⑦ Then the loop ends. The LLM decided; the harness only checked
+```
+
+**Also on screen**
+
+```
+MODEL PROVIDER · over the network:  LLM (tokens in, tokens out)  ·  prompt cache (unchanged prefix)
+HARNESS · Claude Code · a program on your machine
+
+1  Conversation store    every message so far          (your request starts here)
+2  Prompt builder        joins all the parts           → the whole prompt
+3  Reply parser          ← one reply
+4  tool call in the reply?
+     YES → 5  Permissions    may this run?
+           6  Tool router    who can do this?
+              Built-in tools: your files, your shell
+              Skill loader: skills/ on disk
+              Sub-agent: own loop, own context
+              MCP clients: one per server
+           7  Result as text · appended to the conversation as a tool_result
+           8  next round: back to step 1
+     NO  → Done: the reply is the answer · shown to you, the loop ends
+
+WHAT STEP 2 PUTS INTO THE PROMPT
+· system prompt
+· tool definitions (built-in + from MCP servers)
+· CLAUDE.md · one line per skill
+· the whole conversation: your request, every reply, every tool result
+
+MCP SERVERS · local or remote
+"spec" → embedding model + vector DB (RAG)
+"jira" → Jira API
+"bitbucket" → repositories, pull requests
+
+Who decides that the task is finished?
+The LLM: it reads everything so far and writes an answer instead of a tool call.
+The harness does not judge. It only checks whether the reply contains a tool call.
+
+Safety stops, enforced by the harness
+you interrupt · maximum rounds reached · context window full · permission denied
+```
+
+**Extra**
+
+```
+Every reply ends with the end token. That only ends one reply, not the task.
+The task ends when a reply contains no tool call. That is the model's decision.
+The model can decide because it re-reads the whole conversation at every round.
+The harness check is mechanical: tool call present, continue; none, stop.
+```
+
+---
+
 ## 10a · /model
 
 `10a_model.gif`

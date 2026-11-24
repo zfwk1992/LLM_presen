@@ -830,6 +830,71 @@ The LLM sees only the prompt. The harness is its only door to files, skills, MCP
 
 中文（结论）：LLM 只看得到提示词。harness 是它通往文件、skill、MCP server 和 RAG 的唯一通道。一切都以文字形式返回。
 
+## 09c · Harness 内部：一轮循环，以及它怎么停下来
+
+`09c_architecture_detail.gif`
+
+```
+① The harness keeps the whole conversation and builds the prompt from it
+② The prompt goes to the model provider; one reply comes back
+③ The harness parses the reply and asks one question: is there a tool call?
+④ Yes: check permission, then route it to the right executor
+⑤ The result becomes text, is appended, and the next round starts
+⑥ Same path every round. One day the reply contains no tool call
+⑦ Then the loop ends. The LLM decided; the harness only checked
+```
+
+| 出现时间 | 英文原文 | 中文 |
+|---|---|---|
+| 0.8 s | ① The harness keeps the whole conversation and builds the prompt from it | ① harness 保存着整段对话，并用它拼出提示词 |
+| 3.8 s | ② The prompt goes to the model provider; one reply comes back | ② 提示词发给模型提供方，回来一个回复 |
+| 6.8 s | ③ The harness parses the reply and asks one question: is there a tool call? | ③ harness 解析回复，只问一个问题：里面有工具调用吗？ |
+| 9.6 s | ④ Yes: check permission, then route it to the right executor | ④ 有：检查权限，然后交给对应的执行者 |
+| 13.2 s | ⑤ The result becomes text, is appended, and the next round starts | ⑤ 结果变成文字，被追加进去，下一轮开始 |
+| 15.8 s | ⑥ Same path every round. One day the reply contains no tool call | ⑥ 每一轮都走同一条路。直到某一次，回复里没有工具调用 |
+| 18.6 s | ⑦ Then the loop ends. The LLM decided; the harness only checked | ⑦ 这时循环结束。做决定的是 LLM，harness 只是检查 |
+
+画面上的其他文字：
+
+```
+MODEL PROVIDER · over the network:  LLM (tokens in, tokens out)  ·  prompt cache (unchanged prefix)
+HARNESS · Claude Code · a program on your machine
+
+1  Conversation store    every message so far          (your request starts here)
+2  Prompt builder        joins all the parts           → the whole prompt
+3  Reply parser          ← one reply
+4  tool call in the reply?
+     YES → 5  Permissions    may this run?
+           6  Tool router    who can do this?
+              Built-in tools: your files, your shell
+              Skill loader: skills/ on disk
+              Sub-agent: own loop, own context
+              MCP clients: one per server
+           7  Result as text · appended to the conversation as a tool_result
+           8  next round: back to step 1
+     NO  → Done: the reply is the answer · shown to you, the loop ends
+
+WHAT STEP 2 PUTS INTO THE PROMPT
+· system prompt
+· tool definitions (built-in + from MCP servers)
+· CLAUDE.md · one line per skill
+· the whole conversation: your request, every reply, every tool result
+
+MCP SERVERS · local or remote
+"spec" → embedding model + vector DB (RAG)
+"jira" → Jira API
+"bitbucket" → repositories, pull requests
+
+Who decides that the task is finished?
+The LLM: it reads everything so far and writes an answer instead of a tool call.
+The harness does not judge. It only checks whether the reply contains a tool call.
+
+Safety stops, enforced by the harness
+you interrupt · maximum rounds reached · context window full · permission denied
+```
+
+中文（底部两个框）：谁决定任务已经完成？是 LLM：它读完到目前为止的全部内容，写出答案而不是工具调用。harness 不做判断，它只检查回复里有没有工具调用。由 harness 强制执行的安全停止：你中断、达到最大轮数、上下文窗口已满、权限被拒绝。
+
 ## 10a · /model
 
 `10a_model.gif`
@@ -978,9 +1043,10 @@ all counts are illustrative
 | 08_skills | 5 |
 | 09_context_engineering | 5 |
 | 09b_architecture | 6 |
+| 09c_architecture_detail | 7 |
 | 10a_model | 2 |
 | 10b_effort | 2 |
 | 10c_cost_formula | 1 |
 | 10d_same_task_models | 6 |
 | 10e_same_task_effort | 6 |
-| **合计** | **145** |
+| **合计** | **152** |

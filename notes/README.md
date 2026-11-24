@@ -1,6 +1,6 @@
 # LLM 与 AI Agent 演讲 · 学习笔记
 
-这套笔记和 [../llm_agent_animations_single_page/](../llm_agent_animations_single_page/) 里的 30 个 GIF 一一对应。每篇笔记讲清楚一页动画：画面每一步在演示什么、背后的概念、容易讲错的地方、听众可能问什么。
+这套笔记和 [../llm_agent_animations_single_page/](../llm_agent_animations_single_page/) 里的 31 个 GIF 一一对应。每篇笔记讲清楚一页动画：画面每一步在演示什么、背后的概念、容易讲错的地方、听众可能问什么。
 
 ## 整体故事线
 
@@ -48,17 +48,20 @@
 | 23 | `08_skills.gif` | 19.4 s | [08_skills.md](08_skills.md) | 三级按需加载，装很多也不占上下文 |
 | 24 | `09_context_engineering.gif` | 23.4 s | [09_context_engineering.md](09_context_engineering.md) | 上下文是有限资源，要管理 |
 | 25 | `09b_architecture.gif` | 24.5 s | [09b_architecture.md](09b_architecture.md) | 第三章收尾：整体架构，一切都经过 harness |
-| 26 | `10a_model.gif` | 10.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 模型 = 用哪套权重 |
-| 27 | `10b_effort.gif` | 10.6 s | [10_model_vs_effort.md](10_model_vs_effort.md) | Effort = 同一个模型干多少活 |
-| 28 | `10c_cost_formula.gif` | 5.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 两个旋钮相乘 |
-| 29 | `10d_same_task_models.gif` | 22.5 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 同一个 DCM 请求换三个模型：速度、单价、判断质量不同 |
-| 30 | `10e_same_task_effort.gif` | 23.0 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 同一个 DCM 请求换四档 effort：轮数和思考量不同 |
+| 26 | `09c_architecture_detail.gif` | 24.5 s | [09c_architecture_detail.md](09c_architecture_detail.md) | Harness 内部的八个步骤；循环唯一的出口是"回复里没有工具调用" |
+| 27 | `10a_model.gif` | 10.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 模型 = 用哪套权重 |
+| 28 | `10b_effort.gif` | 10.6 s | [10_model_vs_effort.md](10_model_vs_effort.md) | Effort = 同一个模型干多少活 |
+| 29 | `10c_cost_formula.gif` | 5.7 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 两个旋钮相乘 |
+| 30 | `10d_same_task_models.gif` | 22.5 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 同一个 DCM 请求换三个模型：速度、单价、判断质量不同 |
+| 31 | `10e_same_task_effort.gif` | 23.0 s | [10_model_vs_effort.md](10_model_vs_effort.md) | 同一个 DCM 请求换四档 effort：轮数和思考量不同 |
 
 另有 [glossary.md](glossary.md)：中英文术语对照，备查；[captions.md](captions.md)：每页动画底部说明文字的原文和翻译，可直接贴到 PPT。
 
 `02c` 到 `02f`、`04a` 到 `04e` 是后来新增的九页，`02b` 末尾加了一个说明框，原始循环版文件夹里没有这些内容。原来的 `04_agent_loop.gif` 改名为 `04f_agent_loop.gif`，内容没变。生成脚本在 [../tools/anim/](../tools/anim/)，以后要改文字或节奏可以直接改脚本重新生成。
 
-动画总时长约 9 分 50 秒。
+动画总时长约 10 分 15 秒。
+
+`09c` 是 `09b` 的放大版：`09b` 从外面看谁连着谁，`09c` 从里面看 harness 一轮怎么走，并回答"Agent 怎么知道自己做完了"。两页都放时先 `09b` 后 `09c`。
 
 [06d_embedding_model.md](06d_embedding_model.md) 是一篇没有对应 GIF 的补充笔记，讲 RAG 用的 embedding 模型有多大、内部结构、怎么训练出来的，以及有哪些现成的可以选。
 
